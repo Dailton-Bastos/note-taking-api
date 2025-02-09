@@ -1,0 +1,5 @@
+echo '[pre-commit] This may take a while...'
+
+lint-staged
+
+echo 'No errors found: committing this now...🚀'

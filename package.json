@@ -20,7 +20,12 @@
 		"test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
 		"prepare": "husky || true",
-		"commit": "cz"
+		"commit": "cz",
+		"typeorm": "ts-node ./node_modules/typeorm/cli",
+		"migration:create": "bun run typeorm migration:create ./src/database/migrations/$(echo $NAME)",
+		"migration:run": "bun run typeorm migration:run -d ./src/config/typeOrm.config.ts",
+		"migration:revert": "bun run typeorm migration:revert -d ./src/config/typeOrm.config.ts",
+		"migration:generate": "bun run typeorm migration:generate ./src/database/migrations/$(echo $NAME) -d ./src/config/typeOrm.config.ts"
 	},
 	"lint-staged": {
 		"*.{js,ts,cjs,mjs,tsx,json}": [
@@ -38,6 +43,7 @@
 		"@nestjs/core": "^11.0.1",
 		"@nestjs/platform-express": "^11.0.1",
 		"@nestjs/typeorm": "^11.0.0",
+		"dotenv": "^16.4.7",
 		"pg": "^8.13.1",
 		"reflect-metadata": "^0.2.2",
 		"rxjs": "^7.8.1",

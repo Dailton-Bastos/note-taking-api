@@ -1,11 +1,5 @@
-import { Module } from "@nestjs/common"
-import { ConfigModule } from "@nestjs/config"
+import { registerAs } from "@nestjs/config"
 
-@Module({
-	imports: [
-		ConfigModule.forRoot({
-			ignoreEnvFile: true,
-		}),
-	],
-})
-export class GlobalConfigModule {}
+export default registerAs("globalConfig", () => ({
+	environment: process.env.NODE_ENV || "development",
+}))

@@ -1,4 +1,5 @@
 import { registerAs } from "@nestjs/config"
+import yn from "yn"
 
 type DataBaseType = "postgres"
 
@@ -9,6 +10,6 @@ export const databaseConfig = registerAs("databaseConfig", () => ({
 	username: process.env.DATABASE_USERNAME,
 	password: process.env.DATABASE_PASSWORD,
 	database: process.env.DATABASE_DATABASE,
-	autoLoadEntities: Boolean(process.env.DATABASE_TYPE),
-	synchronize: Boolean(process.env.DATABASE_TYPE),
+	autoLoadEntities: yn(process.env.DATABASE_AUTOLOADENTITIES),
+	synchronize: yn(process.env.DATABASE_SYNCHRONIZE),
 }))

@@ -14,6 +14,7 @@ export class UsersService {
 	async create(createUserDto: RequestUserDto) {
 		const userData = {
 			email: createUserDto.email,
+			password: createUserDto.password,
 		}
 
 		const newUser = this.userRepository.create({ ...userData })

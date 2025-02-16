@@ -30,13 +30,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
 				: HttpStatus.INTERNAL_SERVER_ERROR
 
 		const httpMessage =
-			exception instanceof HttpException
+			exception && typeof exception === "object" && "message" in exception
 				? exception.message
 				: SERVER_ERROR_MESSAGE
 
+		const exceptionResponse =
+			exception instanceof HttpException
+				? exception.getResponse()
+				: { message: httpMessage, statusCode: httpStatus }
+
+		const error =
+			typeof response === "string"
+				? {
+						message: exceptionResponse,
+						statusCode: httpStatus,
+					}
+				: (exceptionResponse as { message: string; statusCode: string })
+
 		const responseBody = {
-			message: httpMessage,
-			statusCode: httpStatus,
+			...error,
 			timestamp: new Date().toISOString(),
 		}
 

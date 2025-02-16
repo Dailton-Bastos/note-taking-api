@@ -6,9 +6,16 @@ import { GlobalConfigModule } from "./config/global.config.module"
 import { APP_FILTER } from "@nestjs/core"
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter"
 import { AuthModule } from "./auth/auth.module"
+import { HashingModule } from "./common/hashing/hashing.module"
 
 @Module({
-	imports: [GlobalConfigModule, DatabaseModule, UsersModule, AuthModule],
+	imports: [
+		GlobalConfigModule,
+		DatabaseModule,
+		UsersModule,
+		AuthModule,
+		HashingModule,
+	],
 	controllers: [],
 	providers: [
 		AppService,

@@ -8,10 +8,12 @@ import { JwtService } from "@nestjs/jwt"
 import type { ConfigType } from "@nestjs/config"
 import type { RequestSignInDto } from "./dto/request-signIn.dto"
 import type { ResponseSignInDto } from "./dto/response-signIn.dto"
+import type { RequestRefreshTokenDto } from "./dto/request-refresh-token.dto"
 
 @Injectable()
 export class AuthService {
 	private readonly jwtExpirationTimeInSeconds: number
+	private readonly jwtRefreshExpirationTimeInSeconds: number
 
 	constructor(
 		@InjectRepository(UserEntity)
@@ -22,6 +24,7 @@ export class AuthService {
 		private readonly jwtService: JwtService,
 	) {
 		this.jwtExpirationTimeInSeconds = this.jwtSettings.jwtTtl
+		this.jwtRefreshExpirationTimeInSeconds = this.jwtSettings.jwtRefreshTtl
 	}
 
 	async signIn({
@@ -43,16 +46,62 @@ export class AuthService {
 			throw new UnauthorizedException("Incorrect email or password")
 		}
 
-		const payload = {
-			sub: user.id,
-			email: user.email,
-		}
+		return this.createTokens({ sub: user.id, email: user.email })
+	}
 
-		const accessToken = await this.jwtService.signAsync(payload)
+	async refreshTokens({ token }: RequestRefreshTokenDto) {
+		try {
+			const { sub } = await this.jwtService.verifyAsync(token)
+
+			const user = await this.userRepository.findOneBy({ id: sub })
+
+			if (!user) throw new Error("Access Denied")
+
+			return this.createTokens({ sub, email: user.email })
+		} catch (error) {
+			throw new UnauthorizedException(error.message)
+		}
+	}
+
+	private async createTokens({
+		sub,
+		email,
+	}: { sub: number; email: string }): Promise<ResponseSignInDto> {
+		const accessTokenPromise = this.signJwtAsync<Partial<UserEntity>>({
+			sub,
+			expiresIn: this.jwtExpirationTimeInSeconds,
+			payload: { email },
+		})
+
+		const refreshTokenPromise = this.signJwtAsync({
+			sub,
+			expiresIn: this.jwtRefreshExpirationTimeInSeconds,
+		})
+
+		const [accessToken, refreshToken] = await Promise.all([
+			accessTokenPromise,
+			refreshTokenPromise,
+		])
 
 		return {
 			accessToken,
-			expiresIn: this.jwtExpirationTimeInSeconds,
+			refreshToken,
 		}
+	}
+
+	private async signJwtAsync<T>({
+		sub,
+		expiresIn,
+		payload,
+	}: { sub: number; expiresIn: number; payload?: T }) {
+		return await this.jwtService.signAsync(
+			{
+				sub,
+				...payload,
+			},
+			{
+				expiresIn,
+			},
+		)
 	}
 }

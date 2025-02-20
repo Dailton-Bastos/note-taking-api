@@ -1,5 +1,5 @@
 import { AbstractEntity } from "src/database/AbstractEntity.entity"
-import { Column, Entity } from "typeorm"
+import { Column, CreateDateColumn, Entity } from "typeorm"
 
 @Entity({ name: "user" })
 export class UserEntity extends AbstractEntity<UserEntity> {
@@ -8,4 +8,7 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 
 	@Column({ length: 255 })
 	password: string
+
+	@CreateDateColumn({ name: "email_verified" })
+	emailVerified: Date
 }

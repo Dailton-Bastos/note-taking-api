@@ -10,6 +10,7 @@ import { HashingModule } from "./common/hashing/hashing.module"
 import { AuthGuard } from "./common/guards/auth.guard"
 import { TypeOrmModule } from "@nestjs/typeorm"
 import { UserEntity } from "./users/entities/user.entity"
+import { TokensModule } from "./common/tokens/tokens.module"
 
 @Module({
 	imports: [
@@ -18,6 +19,7 @@ import { UserEntity } from "./users/entities/user.entity"
 		UsersModule,
 		AuthModule,
 		HashingModule,
+		TokensModule,
 		TypeOrmModule.forFeature([UserEntity]),
 	],
 	controllers: [],

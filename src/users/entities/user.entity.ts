@@ -1,4 +1,4 @@
-import { AbstractEntity } from "src/database/AbstractEntity.entity"
+import { AbstractEntity } from "src/database/entities/abstract.entity"
 import { Column, CreateDateColumn, Entity } from "typeorm"
 
 @Entity({ name: "user" })

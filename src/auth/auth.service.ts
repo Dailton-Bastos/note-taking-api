@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from "@nestjs/common"
+import {
+	BadRequestException,
+	Inject,
+	Injectable,
+	UnauthorizedException,
+} from "@nestjs/common"
 import { Repository } from "typeorm"
 import { UserEntity } from "src/users/entities/user.entity"
 import { InjectRepository } from "@nestjs/typeorm"
@@ -15,6 +20,9 @@ import { UsersService } from "src/users/users.service"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { RequestResetPasswordDto } from "./dto/request-reset-password.dto"
 import { GenerateTokensProtocol } from "src/common/tokens/generate-tokens.protocol"
+import { RequestNewPasswordDto } from "./dto/request-new-password.dto"
+import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
+import { RequestNewPasswordTokenDto } from "./dto/request-new-password-token.dto"
 
 @Injectable()
 export class AuthService {
@@ -33,6 +41,8 @@ export class AuthService {
 		@InjectRepository(EmailVerificationCodeEntity)
 		private readonly emailVerificationCodeRepository: Repository<EmailVerificationCodeEntity>,
 		private readonly generateTokensService: GenerateTokensProtocol,
+		@InjectRepository(PasswordResetTokenEntity)
+		private readonly passwordResetTokenRepository: Repository<PasswordResetTokenEntity>,
 	) {
 		this.jwtExpirationTimeInSeconds = this.jwtSettings.jwtTtl
 		this.jwtRefreshExpirationTimeInSeconds = this.jwtSettings.jwtRefreshTtl
@@ -129,6 +139,55 @@ export class AuthService {
 		}
 
 		return this.generateTokensService.generateResetPasswordToken({ email })
+	}
+
+	async newPassword(
+		{ token }: RequestNewPasswordTokenDto,
+		{ password }: RequestNewPasswordDto,
+	) {
+		if (!token) {
+			throw new UnauthorizedException("Missing token")
+		}
+
+		if (!password) {
+			throw new BadRequestException("New password is required")
+		}
+
+		const existingToken =
+			await this.verificationTokensService.getPasswordResetTokenByToken({
+				token: token,
+			})
+
+		if (!existingToken) {
+			throw new UnauthorizedException("Token does not exist")
+		}
+
+		const hasExpiredToken = new Date(existingToken.expiresAt) < new Date()
+
+		if (hasExpiredToken) {
+			throw new UnauthorizedException("Token has expired")
+		}
+
+		const existingUser = await this.usersService.getUserByEmail({
+			email: existingToken.email,
+		})
+
+		if (!existingUser) {
+			throw new UnauthorizedException("Email does not exist")
+		}
+
+		const hashedPassword = await this.hashingService.hash(password)
+
+		await this.passwordResetTokenRepository.delete({ id: existingToken.id })
+
+		await this.userRepository.update(
+			{
+				password: existingUser.password,
+			},
+			{
+				password: hashedPassword,
+			},
+		)
 	}
 
 	private async createTokens({

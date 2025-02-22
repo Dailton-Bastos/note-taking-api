@@ -13,4 +13,8 @@ export abstract class VerificationTokensProtocol {
 	abstract getPasswordResetTokenByEmail({
 		email,
 	}: { email: string }): Promise<PasswordResetTokenEntity | null>
+
+	abstract getPasswordResetTokenByToken({
+		token,
+	}: { token: string }): Promise<PasswordResetTokenEntity | null>
 }

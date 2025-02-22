@@ -9,11 +9,16 @@ import { JwtModule } from "@nestjs/jwt"
 import type { ConfigType } from "@nestjs/config"
 import { UsersModule } from "src/users/users.module"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
+import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 
 @Global()
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([UserEntity, EmailVerificationCodeEntity]),
+		TypeOrmModule.forFeature([
+			UserEntity,
+			EmailVerificationCodeEntity,
+			PasswordResetTokenEntity,
+		]),
 		ConfigModule.forFeature(jwtConfig),
 		JwtModule.registerAsync({
 			global: true,

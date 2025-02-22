@@ -35,4 +35,10 @@ export class VerificationTokensService extends VerificationTokensProtocol {
 	}: { email: string }): Promise<PasswordResetTokenEntity | null> {
 		return this.passwordResetTokenRepository.findOneBy({ email })
 	}
+
+	async getPasswordResetTokenByToken({
+		token,
+	}: { token: string }): Promise<PasswordResetTokenEntity | null> {
+		return this.passwordResetTokenRepository.findOneBy({ token })
+	}
 }

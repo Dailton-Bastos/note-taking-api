@@ -12,6 +12,8 @@ import { RequestRefreshTokenDto } from "./dto/request-refresh-token.dto"
 import { SetPublicRoute } from "src/common/decorators/set-public-route.decorator"
 import { RequestEmailVerificationDto } from "./dto/request-email-verification.dto"
 import { RequestResetPasswordDto } from "./dto/request-reset-password.dto"
+import { RequestNewPasswordTokenDto } from "./dto/request-new-password-token.dto"
+import { RequestNewPasswordDto } from "./dto/request-new-password.dto"
 
 @Controller("auth")
 export class AuthController {
@@ -36,6 +38,16 @@ export class AuthController {
 	@Post("reset-password")
 	async resetPassword(@Body() { email }: RequestResetPasswordDto) {
 		return this.authService.resetPassword({ email })
+	}
+
+	@SetPublicRoute()
+	@HttpCode(HttpStatus.OK)
+	@Post("new-password")
+	async newPassword(
+		@Query() { token }: RequestNewPasswordTokenDto,
+		@Body() { password }: RequestNewPasswordDto,
+	) {
+		return this.authService.newPassword({ token }, { password })
 	}
 
 	@HttpCode(HttpStatus.OK)

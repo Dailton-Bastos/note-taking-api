@@ -5,6 +5,7 @@ import { Injectable } from "@nestjs/common"
 import { VerificationTokensProtocol } from "./verification-tokens.protocol"
 import { v4 as uuid4 } from "uuid"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
+import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 
 @Injectable()
 export class GenerateTokensService extends GenerateTokensProtocol {
@@ -12,6 +13,8 @@ export class GenerateTokensService extends GenerateTokensProtocol {
 		@InjectRepository(EmailVerificationCodeEntity)
 		private readonly emailVerificationCodeRepository: Repository<EmailVerificationCodeEntity>,
 		private readonly verificationTokensService: VerificationTokensProtocol,
+		@InjectRepository(PasswordResetTokenEntity)
+		private readonly passwordResetTokenRepository: Repository<PasswordResetTokenEntity>,
 	) {
 		super()
 	}
@@ -42,5 +45,27 @@ export class GenerateTokensService extends GenerateTokensProtocol {
 		})
 
 		return this.emailVerificationCodeRepository.save(verificationToken)
+	}
+
+	async generateResetPasswordToken({ email }: { email: string }) {
+		const existingToken =
+			await this.verificationTokensService.getPasswordResetTokenByEmail({
+				email,
+			})
+
+		if (existingToken) {
+			await this.passwordResetTokenRepository.delete({ id: existingToken.id })
+		}
+
+		const token = uuid4()
+		const expiresAt = new Date(new Date().getTime() + 3600 * 1000) // 1h
+
+		const resetPasswordToken = this.passwordResetTokenRepository.create({
+			email,
+			token,
+			expiresAt,
+		})
+
+		return this.passwordResetTokenRepository.save(resetPasswordToken)
 	}
 }

@@ -13,6 +13,8 @@ import { RequestEmailVerificationDto } from "./dto/request-email-verification.dt
 import { VerificationTokensProtocol } from "src/common/tokens/verification-tokens.protocol"
 import { UsersService } from "src/users/users.service"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
+import { RequestResetPasswordDto } from "./dto/request-reset-password.dto"
+import { GenerateTokensProtocol } from "src/common/tokens/generate-tokens.protocol"
 
 @Injectable()
 export class AuthService {
@@ -30,6 +32,7 @@ export class AuthService {
 		private readonly usersService: UsersService,
 		@InjectRepository(EmailVerificationCodeEntity)
 		private readonly emailVerificationCodeRepository: Repository<EmailVerificationCodeEntity>,
+		private readonly generateTokensService: GenerateTokensProtocol,
 	) {
 		this.jwtExpirationTimeInSeconds = this.jwtSettings.jwtTtl
 		this.jwtRefreshExpirationTimeInSeconds = this.jwtSettings.jwtRefreshTtl
@@ -116,6 +119,16 @@ export class AuthService {
 		await this.emailVerificationCodeRepository.delete({ id: existingToken.id })
 
 		return this.userRepository.save(user)
+	}
+
+	async resetPassword({ email }: RequestResetPasswordDto) {
+		const existingUser = await this.usersService.getUserByEmail({ email })
+
+		if (!existingUser) {
+			throw new UnauthorizedException("Email does not exist")
+		}
+
+		return this.generateTokensService.generateResetPasswordToken({ email })
 	}
 
 	private async createTokens({

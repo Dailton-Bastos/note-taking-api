@@ -5,10 +5,16 @@ import { VerificationTokensProtocol } from "./verification-tokens.protocol"
 import { VerificationTokensService } from "./verification-tokens.service"
 import { TypeOrmModule } from "@nestjs/typeorm"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
+import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 
 @Global()
 @Module({
-	imports: [TypeOrmModule.forFeature([EmailVerificationCodeEntity])],
+	imports: [
+		TypeOrmModule.forFeature([
+			EmailVerificationCodeEntity,
+			PasswordResetTokenEntity,
+		]),
+	],
 	providers: [
 		{
 			provide: GenerateTokensProtocol,

@@ -9,6 +9,7 @@ import { RequestUserByEmailDto } from "./dto/request-user-by-email.dto"
 export class UsersController {
 	constructor(private readonly usersService: UsersService) {}
 
+	@SetPublicRoute()
 	@Post()
 	async create(@Body() createUserDto: RequestUserDto) {
 		return this.usersService.create(createUserDto)

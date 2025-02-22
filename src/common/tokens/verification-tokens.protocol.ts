@@ -4,4 +4,8 @@ export abstract class VerificationTokensProtocol {
 	abstract getEmailVerificationTokenByEmail({
 		email,
 	}: { email: string }): Promise<EmailVerificationCodeEntity | null>
+
+	abstract getEmailVerificationTokenByToken({
+		token,
+	}: { token: string }): Promise<EmailVerificationCodeEntity | null>
 }

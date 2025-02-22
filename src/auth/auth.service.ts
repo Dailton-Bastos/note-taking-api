@@ -9,6 +9,10 @@ import type { ConfigType } from "@nestjs/config"
 import type { RequestSignInDto } from "./dto/request-signIn.dto"
 import type { ResponseSignInDto } from "./dto/response-signIn.dto"
 import type { RequestRefreshTokenDto } from "./dto/request-refresh-token.dto"
+import { RequestEmailVerificationDto } from "./dto/request-email-verification.dto"
+import { VerificationTokensProtocol } from "src/common/tokens/verification-tokens.protocol"
+import { UsersService } from "src/users/users.service"
+import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 
 @Injectable()
 export class AuthService {
@@ -22,6 +26,10 @@ export class AuthService {
 		@Inject(jwtConfig.KEY)
 		private readonly jwtSettings: ConfigType<typeof jwtConfig>,
 		private readonly jwtService: JwtService,
+		private readonly verificationTokensService: VerificationTokensProtocol,
+		private readonly usersService: UsersService,
+		@InjectRepository(EmailVerificationCodeEntity)
+		private readonly emailVerificationCodeRepository: Repository<EmailVerificationCodeEntity>,
 	) {
 		this.jwtExpirationTimeInSeconds = this.jwtSettings.jwtTtl
 		this.jwtRefreshExpirationTimeInSeconds = this.jwtSettings.jwtRefreshTtl
@@ -61,6 +69,49 @@ export class AuthService {
 		} catch (error) {
 			throw new UnauthorizedException(error.message)
 		}
+	}
+
+	async emailVerification({ token }: RequestEmailVerificationDto) {
+		if (!token) {
+			throw new UnauthorizedException("Missing token")
+		}
+
+		const existingToken =
+			await this.verificationTokensService.getEmailVerificationTokenByToken({
+				token,
+			})
+
+		if (!existingToken) {
+			throw new UnauthorizedException("Token does not exist")
+		}
+
+		const hasExpiredToken = new Date(existingToken.expiresAt) < new Date()
+
+		if (hasExpiredToken) {
+			throw new UnauthorizedException("Token has expired")
+		}
+
+		const existingUser = await this.usersService.getUserByEmail({
+			email: existingToken.email,
+		})
+
+		if (!existingUser) {
+			throw new UnauthorizedException("Email does not exist")
+		}
+
+		const user = await this.userRepository.preload({
+			id: existingUser.id,
+			emailVerified: new Date(),
+			email: existingToken.email,
+		})
+
+		if (!user) {
+			throw new UnauthorizedException("User does not exist")
+		}
+
+		await this.emailVerificationCodeRepository.delete({ id: existingToken.id })
+
+		return this.userRepository.save(user)
 	}
 
 	private async createTokens({

@@ -1,9 +1,14 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common"
+import {
+	Injectable,
+	InternalServerErrorException,
+	UnauthorizedException,
+} from "@nestjs/common"
 import { InjectRepository } from "@nestjs/typeorm"
 import { UserEntity } from "./entities/user.entity"
 import { RequestUserDto } from "./dto/request-user.dto"
 import { HashingService } from "src/common/hashing/hashing.service"
 import { GenerateTokensProtocol } from "src/common/tokens/generate-tokens.protocol"
+import { RequestUserByEmailDto } from "./dto/request-user-by-email.dto"
 import type { Repository } from "typeorm"
 
 @Injectable()
@@ -39,5 +44,30 @@ export class UsersService {
 		}
 
 		return newUser
+	}
+
+	async newEmailVerificationToken({ email }: RequestUserByEmailDto) {
+		if (!email) {
+			throw new UnauthorizedException("Missing email")
+		}
+
+		const existingUser = await this.getUserByEmail({ email })
+
+		if (!existingUser) {
+			throw new UnauthorizedException("Email does not exist")
+		}
+
+		return this.generateTokensService.generateEmailVerificationToken({
+			email,
+			userId: existingUser.id,
+		})
+	}
+
+	async getUserByEmail({ email }: RequestUserByEmailDto) {
+		if (!email) {
+			throw new UnauthorizedException("Missing email")
+		}
+
+		return this.userRepository.findOneBy({ email })
 	}
 }

@@ -20,4 +20,10 @@ export class VerificationTokensService extends VerificationTokensProtocol {
 			email,
 		})
 	}
+
+	async getEmailVerificationTokenByToken({
+		token,
+	}: { token: string }): Promise<EmailVerificationCodeEntity | null> {
+		return this.emailVerificationCodeRepository.findOneBy({ code: token })
+	}
 }

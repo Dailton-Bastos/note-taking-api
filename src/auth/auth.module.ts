@@ -7,11 +7,13 @@ import { ConfigModule } from "@nestjs/config"
 import jwtConfig from "src/config/jwt.config"
 import { JwtModule } from "@nestjs/jwt"
 import type { ConfigType } from "@nestjs/config"
+import { UsersModule } from "src/users/users.module"
+import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 
 @Global()
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([UserEntity]),
+		TypeOrmModule.forFeature([UserEntity, EmailVerificationCodeEntity]),
 		ConfigModule.forFeature(jwtConfig),
 		JwtModule.registerAsync({
 			global: true,
@@ -31,6 +33,7 @@ import type { ConfigType } from "@nestjs/config"
 				},
 			}),
 		}),
+		UsersModule,
 	],
 	exports: [ConfigModule],
 	providers: [AuthService],

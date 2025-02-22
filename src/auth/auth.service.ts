@@ -39,10 +39,14 @@ export class AuthService {
 		email,
 		password,
 	}: RequestSignInDto): Promise<ResponseSignInDto> {
-		const user = await this.userRepository.findOneBy({ email })
+		const user = await this.usersService.getUserByEmail({ email })
 
 		if (!user || !user.password) {
 			throw new UnauthorizedException("Incorrect email or password")
+		}
+
+		if (!user.emailVerified) {
+			throw new UnauthorizedException("Access Denied")
 		}
 
 		const passwordMatch = await this.hashingService.compare(

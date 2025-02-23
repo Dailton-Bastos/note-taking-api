@@ -16,6 +16,13 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 	@Column({ length: 100, nullable: true })
 	name?: string
 
+	@Column({
+		name: "is_two_factor_authentication_enabled",
+		default: false,
+		nullable: true,
+	})
+	isTwoFactorAuthenticationEnabled?: boolean
+
 	@OneToMany(
 		() => EmailVerificationCodeEntity,
 		(emailVerificationCode) => emailVerificationCode.userId,

@@ -82,6 +82,8 @@ export class UsersService {
 			{
 				name: updateUserDto.name,
 				password: updateUserDto.password,
+				isTwoFactorAuthenticationEnabled:
+					updateUserDto.isTwoFactorAuthenticationEnabled,
 			},
 		)
 	}

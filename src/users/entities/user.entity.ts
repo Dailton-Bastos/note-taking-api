@@ -1,5 +1,6 @@
 import { AbstractEntity } from "src/database/entities/abstract.entity"
-import { Column, CreateDateColumn, Entity } from "typeorm"
+import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
+import { Column, CreateDateColumn, Entity, OneToMany } from "typeorm"
 
 @Entity({ name: "user" })
 export class UserEntity extends AbstractEntity<UserEntity> {
@@ -14,4 +15,10 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 
 	@Column({ length: 100, nullable: true })
 	name?: string
+
+	@OneToMany(
+		() => EmailVerificationCodeEntity,
+		(emailVerificationCode) => emailVerificationCode.userId,
+	)
+	emailVerificationCodes: EmailVerificationCodeEntity[]
 }

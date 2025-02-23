@@ -51,7 +51,10 @@ export class AuthService {
 	async signIn({
 		email,
 		password,
-	}: RequestSignInDto): Promise<ResponseSignInDto> {
+		code,
+	}: RequestSignInDto): Promise<
+		ResponseSignInDto | { twoFactorAuthentication: boolean }
+	> {
 		const user = await this.usersService.getUserByEmail({ email })
 
 		if (!user || !user.password) {
@@ -69,6 +72,18 @@ export class AuthService {
 
 		if (!passwordMatch) {
 			throw new UnauthorizedException("Incorrect email or password")
+		}
+
+		if (user.isTwoFactorAuthenticationEnabled) {
+			if (code) {
+				// TODO check if code is valid
+			}
+
+			// TODO send email with code
+
+			return {
+				twoFactorAuthentication: true,
+			}
 		}
 
 		return this.createTokens({ sub: user.id, email: user.email })

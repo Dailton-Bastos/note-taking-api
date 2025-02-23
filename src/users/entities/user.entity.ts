@@ -11,4 +11,7 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 
 	@CreateDateColumn({ name: "email_verified" })
 	emailVerified: Date
+
+	@Column({ length: 100, nullable: true })
+	name: string
 }

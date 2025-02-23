@@ -9,9 +9,9 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 	@Column({ length: 255 })
 	password: string
 
-	@CreateDateColumn({ name: "email_verified" })
-	emailVerified: Date
+	@CreateDateColumn({ name: "email_verified", nullable: true })
+	emailVerified?: Date
 
 	@Column({ length: 100, nullable: true })
-	name: string
+	name?: string
 }

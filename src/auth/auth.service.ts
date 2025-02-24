@@ -23,6 +23,7 @@ import { GenerateTokensProtocol } from "src/common/tokens/generate-tokens.protoc
 import { RequestNewPasswordDto } from "./dto/request-new-password.dto"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 import { RequestNewPasswordTokenDto } from "./dto/request-new-password-token.dto"
+import { TwoFactorAuthenticationEntity } from "./entities/two-factor-authentication.entity"
 
 @Injectable()
 export class AuthService {
@@ -43,6 +44,8 @@ export class AuthService {
 		private readonly generateTokensService: GenerateTokensProtocol,
 		@InjectRepository(PasswordResetTokenEntity)
 		private readonly passwordResetTokenRepository: Repository<PasswordResetTokenEntity>,
+		@InjectRepository(TwoFactorAuthenticationEntity)
+		private readonly twoFactorAuthenticationRepository: Repository<TwoFactorAuthenticationEntity>,
 	) {
 		this.jwtExpirationTimeInSeconds = this.jwtSettings.jwtTtl
 		this.jwtRefreshExpirationTimeInSeconds = this.jwtSettings.jwtRefreshTtl
@@ -76,10 +79,36 @@ export class AuthService {
 
 		if (user.isTwoFactorAuthenticationEnabled) {
 			if (code) {
-				// TODO check if code is valid
+				const existingToken =
+					await this.verificationTokensService.getTwoFactorAuthenticationTokenByEmail(
+						{ email },
+					)
+
+				if (!existingToken) {
+					throw new UnauthorizedException("Invalid code")
+				}
+
+				if (existingToken.code !== code) {
+					throw new UnauthorizedException("Invalid code")
+				}
+
+				const hasExpiredToken = new Date(existingToken.expiresAt) < new Date()
+
+				if (hasExpiredToken) {
+					throw new UnauthorizedException("Code has expired")
+				}
+
+				await this.twoFactorAuthenticationRepository.delete({
+					id: existingToken.id,
+				})
+
+				return this.createTokens({ sub: user.id, email: user.email })
 			}
 
 			// TODO send email with code
+			await this.generateTokensService.generateTwoFactorAuthenticationToken({
+				email,
+			})
 
 			return {
 				twoFactorAuthentication: true,

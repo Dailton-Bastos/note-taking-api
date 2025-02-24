@@ -1,3 +1,4 @@
+import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 
@@ -17,4 +18,8 @@ export abstract class VerificationTokensProtocol {
 	abstract getPasswordResetTokenByToken({
 		token,
 	}: { token: string }): Promise<PasswordResetTokenEntity | null>
+
+	abstract getTwoFactorAuthenticationTokenByEmail({
+		email,
+	}: { email: string }): Promise<TwoFactorAuthenticationEntity | null>
 }

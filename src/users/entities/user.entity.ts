@@ -1,14 +1,7 @@
 import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
 import { AbstractEntity } from "src/database/entities/abstract.entity"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
-import {
-	Column,
-	CreateDateColumn,
-	Entity,
-	JoinColumn,
-	OneToMany,
-	OneToOne,
-} from "typeorm"
+import { Column, CreateDateColumn, Entity, OneToMany, OneToOne } from "typeorm"
 
 @Entity({ name: "user" })
 export class UserEntity extends AbstractEntity<UserEntity> {
@@ -38,6 +31,5 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 	emailVerificationCodes: EmailVerificationCodeEntity[]
 
 	@OneToOne(() => TwoFactorAuthenticationEntity)
-	@JoinColumn()
 	twoFactorAuthentication: TwoFactorAuthenticationEntity
 }

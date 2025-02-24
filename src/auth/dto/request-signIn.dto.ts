@@ -1,4 +1,11 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from "class-validator"
+import {
+	IsEmail,
+	IsNotEmpty,
+	IsOptional,
+	IsString,
+	MaxLength,
+	MinLength,
+} from "class-validator"
 
 export class RequestSignInDto {
 	@IsEmail()
@@ -11,5 +18,7 @@ export class RequestSignInDto {
 	@IsOptional()
 	@IsString()
 	@IsNotEmpty()
+	@MinLength(6)
+	@MaxLength(6)
 	code?: string
 }

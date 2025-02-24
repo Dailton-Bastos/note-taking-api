@@ -6,6 +6,8 @@ import { VerificationTokensProtocol } from "./verification-tokens.protocol"
 import { v4 as uuid4 } from "uuid"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
+import crypto from "node:crypto"
+import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
 
 @Injectable()
 export class GenerateTokensService extends GenerateTokensProtocol {
@@ -15,6 +17,8 @@ export class GenerateTokensService extends GenerateTokensProtocol {
 		private readonly verificationTokensService: VerificationTokensProtocol,
 		@InjectRepository(PasswordResetTokenEntity)
 		private readonly passwordResetTokenRepository: Repository<PasswordResetTokenEntity>,
+		@InjectRepository(TwoFactorAuthenticationEntity)
+		private readonly twoFactorAuthenticationRepository: Repository<TwoFactorAuthenticationEntity>,
 	) {
 		super()
 	}
@@ -67,5 +71,33 @@ export class GenerateTokensService extends GenerateTokensProtocol {
 		})
 
 		return this.passwordResetTokenRepository.save(resetPasswordToken)
+	}
+
+	async generateTwoFactorAuthenticationToken({ email }: { email: string }) {
+		const code = crypto.randomInt(100_000, 1_000_000).toString()
+
+		const expiresAt = new Date(new Date().getTime() + 300_000) // 5m
+
+		const existingToken =
+			await this.verificationTokensService.getTwoFactorAuthenticationTokenByEmail(
+				{ email },
+			)
+
+		if (existingToken) {
+			await this.twoFactorAuthenticationRepository.delete({
+				id: existingToken.id,
+			})
+		}
+
+		const twoFactorAuthenticationToken =
+			this.twoFactorAuthenticationRepository.create({
+				email,
+				code,
+				expiresAt,
+			})
+
+		return this.twoFactorAuthenticationRepository.save(
+			twoFactorAuthenticationToken,
+		)
 	}
 }

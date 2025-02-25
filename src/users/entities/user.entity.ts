@@ -1,3 +1,4 @@
+import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
 import { AbstractEntity } from "src/database/entities/abstract.entity"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
@@ -32,4 +33,7 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 
 	@OneToOne(() => TwoFactorAuthenticationEntity)
 	twoFactorAuthentication: TwoFactorAuthenticationEntity
+
+	@OneToOne(() => TwoFactorAuthenticationSecretEntity)
+	twoFactorAuthenticationSecret: TwoFactorAuthenticationSecretEntity
 }

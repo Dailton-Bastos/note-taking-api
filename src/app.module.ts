@@ -11,6 +11,7 @@ import { AuthGuard } from "./common/guards/auth.guard"
 import { TypeOrmModule } from "@nestjs/typeorm"
 import { UserEntity } from "./users/entities/user.entity"
 import { TokensModule } from "./common/tokens/tokens.module"
+import { TOTPModule } from "./common/totp/totp.module"
 
 @Module({
 	imports: [
@@ -19,6 +20,7 @@ import { TokensModule } from "./common/tokens/tokens.module"
 		UsersModule,
 		AuthModule,
 		HashingModule,
+		TOTPModule,
 		TokensModule,
 		TypeOrmModule.forFeature([UserEntity]),
 	],

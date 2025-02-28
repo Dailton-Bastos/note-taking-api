@@ -1,5 +1,6 @@
 import {
 	ForbiddenException,
+	Inject,
 	Injectable,
 	InternalServerErrorException,
 	NotFoundException,
@@ -15,7 +16,10 @@ import type { Repository } from "typeorm"
 import { UpdateUserDto } from "./dto/update-user.dto"
 import { RequestTokenPayloadDto } from "src/auth/dto/request-token-payload.dto"
 import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
-import { encodeBase64 } from "@oslojs/encoding"
+import { encodeBase64, encodeBase32UpperCase } from "@oslojs/encoding"
+import { TOTPService } from "src/common/totp/totp.service"
+import type { ConfigType } from "@nestjs/config"
+import globalConfig from "src/config/global.config"
 
 enum Preferred2FAMethod {
 	APP = "app",
@@ -31,6 +35,9 @@ export class UsersService {
 		private readonly generateTokensService: GenerateTokensProtocol,
 		@InjectRepository(TwoFactorAuthenticationSecretEntity)
 		private readonly twoFactorAuthenticationSecretRepository: Repository<TwoFactorAuthenticationSecretEntity>,
+		private readonly tOtpService: TOTPService,
+		@Inject(globalConfig.KEY)
+		private readonly globalSettings: ConfigType<typeof globalConfig>,
 	) {}
 
 	async create(createUserDto: RequestUserDto) {
@@ -67,7 +74,7 @@ export class UsersService {
 		id: number
 		updateUserDto: UpdateUserDto
 		tokenPayloadDto: RequestTokenPayloadDto
-	}): Promise<void> {
+	}) {
 		const user = await this.getUserById({ id })
 
 		if (!user) {
@@ -99,18 +106,35 @@ export class UsersService {
 		const twoFactorAuthenticationSecret =
 			this.generateTokensService.generateTwoFactorAuthenticationSecret()
 
+		let twoFactorUri: string | undefined = undefined
+		let twoFactorCode: string | undefined = undefined
+
 		if (updateUserDto.preferred2FAMethod === "app") {
 			const existingTwoFactorAuthenticationSecret =
 				await this.getTwoFactorAuthenticationSecretByUserId({ id })
 
-			if (!existingTwoFactorAuthenticationSecret) {
-				const newSecret = this.twoFactorAuthenticationSecretRepository.create({
-					userId: id,
-					secret: encodeBase64(twoFactorAuthenticationSecret),
+			if (existingTwoFactorAuthenticationSecret) {
+				await this.twoFactorAuthenticationSecretRepository.delete({
+					id: existingTwoFactorAuthenticationSecret.id,
 				})
-
-				await this.twoFactorAuthenticationSecretRepository.save(newSecret)
 			}
+
+			const newSecret = this.twoFactorAuthenticationSecretRepository.create({
+				userId: id,
+				secret: encodeBase64(twoFactorAuthenticationSecret),
+			})
+
+			await this.twoFactorAuthenticationSecretRepository.save(newSecret)
+
+			twoFactorUri = this.tOtpService.createTOTPKeyURI({
+				issuer: this.globalSettings.totpIssuer,
+				accountName: user.email,
+				key: twoFactorAuthenticationSecret,
+				periodInSeconds: 30,
+				digits: 6,
+			})
+
+			twoFactorCode = encodeBase32UpperCase(twoFactorAuthenticationSecret)
 		}
 
 		await this.userRepository.update(
@@ -126,6 +150,11 @@ export class UsersService {
 					updateUserDto.preferred2FAMethod as Preferred2FAMethod,
 			},
 		)
+
+		return {
+			twoFactorUri,
+			twoFactorCode,
+		}
 	}
 
 	async newEmailVerificationToken({ email }: RequestUserByEmailDto) {

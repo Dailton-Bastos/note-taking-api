@@ -17,4 +17,6 @@ export abstract class GenerateTokensProtocol {
 	}: {
 		email: string
 	}): Promise<TwoFactorAuthenticationEntity>
+
+	abstract generateTwoFactorAuthenticationSecret(): Uint8Array<ArrayBuffer>
 }

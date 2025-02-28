@@ -14,6 +14,13 @@ import { RequestUserByEmailDto } from "./dto/request-user-by-email.dto"
 import type { Repository } from "typeorm"
 import { UpdateUserDto } from "./dto/update-user.dto"
 import { RequestTokenPayloadDto } from "src/auth/dto/request-token-payload.dto"
+import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
+import { encodeBase64 } from "@oslojs/encoding"
+
+enum Preferred2FAMethod {
+	APP = "app",
+	EMAIL = "email",
+}
 
 @Injectable()
 export class UsersService {
@@ -22,6 +29,8 @@ export class UsersService {
 		private readonly userRepository: Repository<UserEntity>,
 		private readonly hashingService: HashingService,
 		private readonly generateTokensService: GenerateTokensProtocol,
+		@InjectRepository(TwoFactorAuthenticationSecretEntity)
+		private readonly twoFactorAuthenticationSecretRepository: Repository<TwoFactorAuthenticationSecretEntity>,
 	) {}
 
 	async create(createUserDto: RequestUserDto) {
@@ -75,6 +84,35 @@ export class UsersService {
 			)
 		}
 
+		const isTwoFactorAuthenticationEnabled =
+			updateUserDto.isTwoFactorAuthenticationEnabled ||
+			user.isTwoFactorAuthenticationEnabled
+
+		if (updateUserDto.preferred2FAMethod && !isTwoFactorAuthenticationEnabled) {
+			throw new ForbiddenException("TwoFactorAuthenticationEnabled is required")
+		}
+
+		if (isTwoFactorAuthenticationEnabled && !updateUserDto.preferred2FAMethod) {
+			updateUserDto.preferred2FAMethod = "email" as Preferred2FAMethod
+		}
+
+		const twoFactorAuthenticationSecret =
+			this.generateTokensService.generateTwoFactorAuthenticationSecret()
+
+		if (updateUserDto.preferred2FAMethod === "app") {
+			const existingTwoFactorAuthenticationSecret =
+				await this.getTwoFactorAuthenticationSecretByUserId({ id })
+
+			if (!existingTwoFactorAuthenticationSecret) {
+				const newSecret = this.twoFactorAuthenticationSecretRepository.create({
+					userId: id,
+					secret: encodeBase64(twoFactorAuthenticationSecret),
+				})
+
+				await this.twoFactorAuthenticationSecretRepository.save(newSecret)
+			}
+		}
+
 		await this.userRepository.update(
 			{
 				id,
@@ -84,6 +122,8 @@ export class UsersService {
 				password: updateUserDto.password,
 				isTwoFactorAuthenticationEnabled:
 					updateUserDto.isTwoFactorAuthenticationEnabled,
+				preferred2FAMethod:
+					updateUserDto.preferred2FAMethod as Preferred2FAMethod,
 			},
 		)
 	}
@@ -115,5 +155,13 @@ export class UsersService {
 
 	async getUserById({ id }: { id: number }): Promise<UserEntity | null> {
 		return this.userRepository.findOne({ where: { id } })
+	}
+
+	protected getTwoFactorAuthenticationSecretByUserId({
+		id,
+	}: { id: number }): Promise<TwoFactorAuthenticationSecretEntity | null> {
+		return this.twoFactorAuthenticationSecretRepository.findOneBy({
+			userId: id,
+		})
 	}
 }

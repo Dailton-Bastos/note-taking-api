@@ -4,6 +4,11 @@ import { AbstractEntity } from "src/database/entities/abstract.entity"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { Column, CreateDateColumn, Entity, OneToMany, OneToOne } from "typeorm"
 
+enum Preferred2FAMethod {
+	APP = "app",
+	EMAIL = "email",
+}
+
 @Entity({ name: "user" })
 export class UserEntity extends AbstractEntity<UserEntity> {
 	@Column({ unique: true })
@@ -24,6 +29,15 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 		nullable: true,
 	})
 	isTwoFactorAuthenticationEnabled?: boolean
+
+	@Column({
+		name: "preferred_2fa_method",
+		type: "enum",
+		enum: Preferred2FAMethod,
+		default: null,
+		nullable: true,
+	})
+	preferred2FAMethod?: Preferred2FAMethod
 
 	@OneToMany(
 		() => EmailVerificationCodeEntity,

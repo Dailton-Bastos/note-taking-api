@@ -5,6 +5,7 @@ import { Injectable } from "@nestjs/common"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
+import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 
 @Injectable()
 export class VerificationTokensService extends VerificationTokensProtocol {
@@ -15,6 +16,8 @@ export class VerificationTokensService extends VerificationTokensProtocol {
 		private readonly passwordResetTokenRepository: Repository<PasswordResetTokenEntity>,
 		@InjectRepository(TwoFactorAuthenticationEntity)
 		private readonly twoFactorAuthenticationRepository: Repository<TwoFactorAuthenticationEntity>,
+		@InjectRepository(TwoFactorAuthenticationSecretEntity)
+		private readonly twoFactorAuthenticationSecretRepository: Repository<TwoFactorAuthenticationSecretEntity>,
 	) {
 		super()
 	}
@@ -51,5 +54,15 @@ export class VerificationTokensService extends VerificationTokensProtocol {
 		email: string
 	}): Promise<TwoFactorAuthenticationEntity | null> {
 		return this.twoFactorAuthenticationRepository.findOneBy({ email })
+	}
+
+	async getTwoFactorAuthenticationSecretByUserId({
+		userId,
+	}: { userId: number }): Promise<TwoFactorAuthenticationSecretEntity | null> {
+		return this.twoFactorAuthenticationSecretRepository.findOne({
+			where: {
+				userId,
+			},
+		})
 	}
 }

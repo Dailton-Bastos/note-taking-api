@@ -12,14 +12,15 @@ import { RequestUserDto } from "./dto/request-user.dto"
 import { HashingService } from "src/common/hashing/hashing.service"
 import { GenerateTokensProtocol } from "src/common/tokens/generate-tokens.protocol"
 import { RequestUserByEmailDto } from "./dto/request-user-by-email.dto"
-import type { Repository } from "typeorm"
 import { UpdateUserDto } from "./dto/update-user.dto"
 import { RequestTokenPayloadDto } from "src/auth/dto/request-token-payload.dto"
 import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 import { encodeBase64, encodeBase32UpperCase } from "@oslojs/encoding"
 import { TOTPService } from "src/common/totp/totp.service"
-import type { ConfigType } from "@nestjs/config"
 import globalConfig from "src/config/global.config"
+import { TOTP_DIGITS, TOTP_INTERVAL_IN_SECONDS } from "src/common/constants"
+import type { Repository } from "typeorm"
+import type { ConfigType } from "@nestjs/config"
 
 enum Preferred2FAMethod {
 	APP = "app",
@@ -113,25 +114,21 @@ export class UsersService {
 			const existingTwoFactorAuthenticationSecret =
 				await this.getTwoFactorAuthenticationSecretByUserId({ id })
 
-			if (existingTwoFactorAuthenticationSecret) {
-				await this.twoFactorAuthenticationSecretRepository.delete({
-					id: existingTwoFactorAuthenticationSecret.id,
+			if (!existingTwoFactorAuthenticationSecret) {
+				const newSecret = this.twoFactorAuthenticationSecretRepository.create({
+					userId: id,
+					secret: encodeBase64(twoFactorAuthenticationSecret),
 				})
+
+				await this.twoFactorAuthenticationSecretRepository.save(newSecret)
 			}
-
-			const newSecret = this.twoFactorAuthenticationSecretRepository.create({
-				userId: id,
-				secret: encodeBase64(twoFactorAuthenticationSecret),
-			})
-
-			await this.twoFactorAuthenticationSecretRepository.save(newSecret)
 
 			twoFactorUri = this.tOtpService.createTOTPKeyURI({
 				issuer: this.globalSettings.totpIssuer,
 				accountName: user.email,
 				key: twoFactorAuthenticationSecret,
-				periodInSeconds: 30,
-				digits: 6,
+				periodInSeconds: TOTP_INTERVAL_IN_SECONDS,
+				digits: TOTP_DIGITS,
 			})
 
 			twoFactorCode = encodeBase32UpperCase(twoFactorAuthenticationSecret)
@@ -154,6 +151,9 @@ export class UsersService {
 		return {
 			twoFactorUri,
 			twoFactorCode,
+			isTwoFactorAuthenticationEnabled,
+			preferred2FAMethod:
+				updateUserDto.preferred2FAMethod as Preferred2FAMethod,
 		}
 	}
 

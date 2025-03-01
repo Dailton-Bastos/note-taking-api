@@ -21,4 +21,24 @@ export abstract class TOTPService {
 		periodInSeconds: number
 		digits: number
 	}): string
+
+	/**
+	 * Verifies a TOTP with constant-time comparison.
+	 * @param key HMAC key
+	 * @param intervalInSeconds - Interval In Seconds
+	 * @param digits - Digits
+	 * @param otp - TOTP Code
+	 * @returns {string}
+	 */
+	abstract verifyTOTP({
+		key,
+		intervalInSeconds,
+		digits,
+		otp,
+	}: {
+		key: Uint8Array
+		intervalInSeconds: number
+		digits: number
+		otp: string
+	}): boolean
 }

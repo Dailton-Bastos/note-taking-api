@@ -24,6 +24,14 @@ import { RequestNewPasswordDto } from "./dto/request-new-password.dto"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 import { RequestNewPasswordTokenDto } from "./dto/request-new-password-token.dto"
 import { TwoFactorAuthenticationEntity } from "./entities/two-factor-authentication.entity"
+import { TOTPService } from "src/common/totp/totp.service"
+import { decodeBase64 } from "@oslojs/encoding"
+import { TOTP_DIGITS, TOTP_INTERVAL_IN_SECONDS } from "src/common/constants"
+
+enum Preferred2FAMethod {
+	APP = "app",
+	EMAIL = "email",
+}
 
 @Injectable()
 export class AuthService {
@@ -46,6 +54,7 @@ export class AuthService {
 		private readonly passwordResetTokenRepository: Repository<PasswordResetTokenEntity>,
 		@InjectRepository(TwoFactorAuthenticationEntity)
 		private readonly twoFactorAuthenticationRepository: Repository<TwoFactorAuthenticationEntity>,
+		private readonly tOtpService: TOTPService,
 	) {
 		this.jwtExpirationTimeInSeconds = this.jwtSettings.jwtTtl
 		this.jwtRefreshExpirationTimeInSeconds = this.jwtSettings.jwtRefreshTtl
@@ -56,7 +65,8 @@ export class AuthService {
 		password,
 		code,
 	}: RequestSignInDto): Promise<
-		ResponseSignInDto | { twoFactorAuthentication: boolean }
+		| ResponseSignInDto
+		| { twoFactorAuthentication: boolean; preferred2FAMethod: string }
 	> {
 		const user = await this.usersService.getUserByEmail({ email })
 
@@ -79,39 +89,68 @@ export class AuthService {
 
 		if (user.isTwoFactorAuthenticationEnabled) {
 			if (code) {
-				const existingToken =
-					await this.verificationTokensService.getTwoFactorAuthenticationTokenByEmail(
-						{ email },
+				if (!user.preferred2FAMethod || user.preferred2FAMethod === "email") {
+					const existingToken =
+						await this.verificationTokensService.getTwoFactorAuthenticationTokenByEmail(
+							{ email },
+						)
+
+					if (!existingToken) {
+						throw new UnauthorizedException("Invalid code")
+					}
+
+					if (existingToken.code !== code) {
+						throw new UnauthorizedException("Invalid code")
+					}
+
+					const hasExpiredToken = new Date(existingToken.expiresAt) < new Date()
+
+					if (hasExpiredToken) {
+						throw new UnauthorizedException("Code has expired")
+					}
+
+					await this.twoFactorAuthenticationRepository.delete({
+						id: existingToken.id,
+					})
+
+					return this.createTokens({ sub: user.id, email: user.email })
+				}
+
+				const twoFactorAuthenticationSecret =
+					await this.verificationTokensService.getTwoFactorAuthenticationSecretByUserId(
+						{
+							userId: user.id,
+						},
 					)
 
-				if (!existingToken) {
-					throw new UnauthorizedException("Invalid code")
+				if (!twoFactorAuthenticationSecret) {
+					throw new UnauthorizedException("Invalid 2FA Secret")
 				}
 
-				if (existingToken.code !== code) {
-					throw new UnauthorizedException("Invalid code")
-				}
-
-				const hasExpiredToken = new Date(existingToken.expiresAt) < new Date()
-
-				if (hasExpiredToken) {
-					throw new UnauthorizedException("Code has expired")
-				}
-
-				await this.twoFactorAuthenticationRepository.delete({
-					id: existingToken.id,
+				const validOTP = this.tOtpService.verifyTOTP({
+					key: decodeBase64(twoFactorAuthenticationSecret.secret),
+					intervalInSeconds: TOTP_INTERVAL_IN_SECONDS,
+					digits: TOTP_DIGITS,
+					otp: code,
 				})
+
+				if (!validOTP) {
+					throw new UnauthorizedException("The provided 2FA code was invalid")
+				}
 
 				return this.createTokens({ sub: user.id, email: user.email })
 			}
 
-			// TODO send email with code
-			await this.generateTokensService.generateTwoFactorAuthenticationToken({
-				email,
-			})
+			if (!user.preferred2FAMethod || user.preferred2FAMethod === "email") {
+				// TODO send email with code
+				await this.generateTokensService.generateTwoFactorAuthenticationToken({
+					email,
+				})
+			}
 
 			return {
 				twoFactorAuthentication: true,
+				preferred2FAMethod: user.preferred2FAMethod as Preferred2FAMethod,
 			}
 		}
 

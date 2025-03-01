@@ -7,6 +7,7 @@ import { TypeOrmModule } from "@nestjs/typeorm"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
+import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 
 @Global()
 @Module({
@@ -15,6 +16,7 @@ import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-auth
 			EmailVerificationCodeEntity,
 			PasswordResetTokenEntity,
 			TwoFactorAuthenticationEntity,
+			TwoFactorAuthenticationSecretEntity,
 		]),
 	],
 	providers: [

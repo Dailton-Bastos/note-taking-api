@@ -87,60 +87,11 @@ export class AuthService {
 			throw new UnauthorizedException("Incorrect email or password")
 		}
 
-		if (user.isTwoFactorAuthenticationEnabled) {
-			if (code) {
-				if (!user.preferred2FAMethod || user.preferred2FAMethod === "email") {
-					const existingToken =
-						await this.verificationTokensService.getTwoFactorAuthenticationTokenByEmail(
-							{ email },
-						)
+		if (!user.isTwoFactorAuthenticationEnabled) {
+			return this.createTokens({ sub: user.id, email: user.email })
+		}
 
-					if (!existingToken) {
-						throw new UnauthorizedException("Invalid code")
-					}
-
-					if (existingToken.code !== code) {
-						throw new UnauthorizedException("Invalid code")
-					}
-
-					const hasExpiredToken = new Date(existingToken.expiresAt) < new Date()
-
-					if (hasExpiredToken) {
-						throw new UnauthorizedException("Code has expired")
-					}
-
-					await this.twoFactorAuthenticationRepository.delete({
-						id: existingToken.id,
-					})
-
-					return this.createTokens({ sub: user.id, email: user.email })
-				}
-
-				const twoFactorAuthenticationSecret =
-					await this.verificationTokensService.getTwoFactorAuthenticationSecretByUserId(
-						{
-							userId: user.id,
-						},
-					)
-
-				if (!twoFactorAuthenticationSecret) {
-					throw new UnauthorizedException("Invalid 2FA Secret")
-				}
-
-				const validOTP = this.tOtpService.verifyTOTP({
-					key: decodeBase64(twoFactorAuthenticationSecret.secret),
-					intervalInSeconds: TOTP_INTERVAL_IN_SECONDS,
-					digits: TOTP_DIGITS,
-					otp: code,
-				})
-
-				if (!validOTP) {
-					throw new UnauthorizedException("The provided 2FA code was invalid")
-				}
-
-				return this.createTokens({ sub: user.id, email: user.email })
-			}
-
+		if (!code) {
 			if (!user.preferred2FAMethod || user.preferred2FAMethod === "email") {
 				// TODO send email with code
 				await this.generateTokensService.generateTwoFactorAuthenticationToken({
@@ -154,7 +105,21 @@ export class AuthService {
 			}
 		}
 
-		return this.createTokens({ sub: user.id, email: user.email })
+		// Verify Code
+		if (!user.preferred2FAMethod || user.preferred2FAMethod === "email") {
+			return this.validateTwoFactorAuthenticationCode({
+				code,
+				email,
+				userId: user.id,
+			})
+		}
+
+		// Verify a TOTP Code with constant-time comparison.
+		return this.validateTwoFactorAuthenticationTOTPCode({
+			code,
+			email,
+			userId: user.id,
+		})
 	}
 
 	async refreshTokens({ token }: RequestRefreshTokenDto) {
@@ -271,6 +236,71 @@ export class AuthService {
 				password: hashedPassword,
 			},
 		)
+	}
+
+	private async validateTwoFactorAuthenticationCode({
+		code,
+		email,
+		userId,
+	}: { code: string; email: string; userId: number }) {
+		const existingToken =
+			await this.verificationTokensService.getTwoFactorAuthenticationTokenByEmail(
+				{ email },
+			)
+
+		if (!existingToken) {
+			throw new UnauthorizedException("Invalid code")
+		}
+
+		if (existingToken.code !== code) {
+			throw new UnauthorizedException("Invalid code")
+		}
+
+		const hasExpiredToken = new Date(existingToken.expiresAt) < new Date()
+
+		if (hasExpiredToken) {
+			throw new UnauthorizedException("Code has expired")
+		}
+
+		await this.twoFactorAuthenticationRepository.delete({
+			id: existingToken.id,
+		})
+
+		return this.createTokens({ sub: userId, email })
+	}
+
+	private async validateTwoFactorAuthenticationTOTPCode({
+		code,
+		userId,
+		email,
+	}: {
+		code: string
+		email: string
+		userId: number
+	}) {
+		const twoFactorAuthenticationSecret =
+			await this.verificationTokensService.getTwoFactorAuthenticationSecretByUserId(
+				{
+					userId,
+				},
+			)
+
+		if (!twoFactorAuthenticationSecret) {
+			throw new UnauthorizedException("Invalid 2FA Secret")
+		}
+
+		const validTOTP = this.tOtpService.verifyTOTP({
+			key: decodeBase64(twoFactorAuthenticationSecret.secret),
+			intervalInSeconds: TOTP_INTERVAL_IN_SECONDS,
+			digits: TOTP_DIGITS,
+			otp: code,
+		})
+
+		if (!validTOTP) {
+			throw new UnauthorizedException("The provided 2FA code was invalid")
+		}
+
+		return this.createTokens({ sub: userId, email })
 	}
 
 	private async createTokens({

@@ -96,6 +96,9 @@ export class UsersService {
 			updateUserDto.isTwoFactorAuthenticationEnabled ||
 			user.isTwoFactorAuthenticationEnabled
 
+		const preferred2FAMethod =
+			updateUserDto.preferred2FAMethod || user.preferred2FAMethod
+
 		if (updateUserDto.preferred2FAMethod && !isTwoFactorAuthenticationEnabled) {
 			throw new ForbiddenException("TwoFactorAuthenticationEnabled is required")
 		}
@@ -151,9 +154,9 @@ export class UsersService {
 		return {
 			twoFactorUri,
 			twoFactorCode,
-			isTwoFactorAuthenticationEnabled,
-			preferred2FAMethod:
-				updateUserDto.preferred2FAMethod as Preferred2FAMethod,
+			isTwoFactorAuthenticationEnabled:
+				isTwoFactorAuthenticationEnabled ?? false,
+			preferred2FAMethod: preferred2FAMethod as Preferred2FAMethod,
 		}
 	}
 

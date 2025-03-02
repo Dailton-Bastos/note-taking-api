@@ -25,7 +25,11 @@
 		"migration:create": "bun run typeorm migration:create ./src/database/migrations/$(echo $NAME)",
 		"migration:run": "bun run typeorm migration:run -d ./src/config/typeOrm.config.ts",
 		"migration:revert": "bun run typeorm migration:revert -d ./src/config/typeOrm.config.ts",
-		"migration:generate": "bun run typeorm migration:generate ./src/database/migrations/$(echo $NAME) -d ./src/config/typeOrm.config.ts"
+		"migration:generate": "bun run typeorm migration:generate ./src/database/migrations/$(echo $NAME) -d ./src/config/typeOrm.config.ts",
+		"docker:init": "docker compose up -d db app pgadmin",
+		"docker-build:all": "docker compose up -d --build",
+		"docker-build:app": "docker compose up -d --build app",
+		"docker-logs:app": "docker container logs -f note-taking-api"
 	},
 	"lint-staged": {
 		"*.{js,ts,cjs,mjs,tsx,json}": [

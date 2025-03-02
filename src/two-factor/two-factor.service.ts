@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common"
+import {
+	Injectable,
+	NotFoundException,
+	UnauthorizedException,
+} from "@nestjs/common"
 import { VerificationTokensProtocol } from "src/common/tokens/verification-tokens.protocol"
 import { TOTPService } from "src/common/totp/totp.service"
 import { decodeBase64 } from "@oslojs/encoding"
@@ -100,6 +104,23 @@ export class TwoFactorService {
 		userId: number
 	}): Promise<TwoFactorAuthenticationRecoveryEntity | null> {
 		return this.twoFactorAuthenticationRecoveryRepository.findOneBy({ userId })
+	}
+
+	async getTwoFactorAuthenticationRecoveryCodes({
+		userId,
+	}: {
+		userId: number
+	}): Promise<string[]> {
+		if (!userId) {
+			throw new NotFoundException("User not found")
+		}
+
+		const existingCodes =
+			await this.getTwoFactorAuthenticationRecoveryCodeByUserId({ userId })
+
+		if (!existingCodes) return []
+
+		return existingCodes.code.map((code) => this.base64Utils.decode(code))
 	}
 
 	async generateTwoFactorAuthenticationRecoveryCode({

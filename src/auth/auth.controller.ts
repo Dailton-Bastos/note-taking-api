@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Get,
 	HttpCode,
 	HttpStatus,
 	Post,
@@ -14,10 +15,15 @@ import { RequestEmailVerificationDto } from "./dto/request-email-verification.dt
 import { RequestResetPasswordDto } from "./dto/request-reset-password.dto"
 import { RequestNewPasswordTokenDto } from "./dto/request-new-password-token.dto"
 import { RequestNewPasswordDto } from "./dto/request-new-password.dto"
+import { TwoFactorService } from "src/two-factor/two-factor.service"
+import { UserId } from "src/common/decorators/user-id.decorator"
 
 @Controller("auth")
 export class AuthController {
-	constructor(private readonly authService: AuthService) {}
+	constructor(
+		private readonly authService: AuthService,
+		private readonly twoFactorService: TwoFactorService,
+	) {}
 
 	@SetPublicRoute()
 	@HttpCode(HttpStatus.OK)
@@ -54,5 +60,12 @@ export class AuthController {
 	@Post("refresh")
 	async refreshToken(@Body() refreshTokenDto: RequestRefreshTokenDto) {
 		return this.authService.refreshTokens(refreshTokenDto)
+	}
+
+	@Get("recovery-codes")
+	async recoveryCodes(@UserId() userId: number) {
+		return this.twoFactorService.getTwoFactorAuthenticationRecoveryCodes({
+			userId,
+		})
 	}
 }

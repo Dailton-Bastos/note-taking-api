@@ -10,6 +10,7 @@ import type { ConfigType } from "@nestjs/config"
 import { UsersModule } from "src/users/users.module"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
+import { TwoFactorModule } from "src/two-factor/two-factor.module"
 
 @Global()
 @Module({
@@ -39,6 +40,7 @@ import { PasswordResetTokenEntity } from "src/database/entities/password-reset-t
 			}),
 		}),
 		UsersModule,
+		TwoFactorModule,
 	],
 	exports: [ConfigModule],
 	providers: [AuthService],

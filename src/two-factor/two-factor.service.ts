@@ -6,6 +6,7 @@ import { TOTP_DIGITS, TOTP_INTERVAL_IN_SECONDS } from "src/common/constants"
 import { InjectRepository } from "@nestjs/typeorm"
 import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
 import { Repository } from "typeorm"
+import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 
 @Injectable()
 export class TwoFactorService {
@@ -14,6 +15,8 @@ export class TwoFactorService {
 		private readonly verificationTokensService: VerificationTokensProtocol,
 		@InjectRepository(TwoFactorAuthenticationEntity)
 		private readonly twoFactorAuthenticationRepository: Repository<TwoFactorAuthenticationEntity>,
+		@InjectRepository(TwoFactorAuthenticationSecretEntity)
+		private readonly twoFactorAuthenticationSecretRepository: Repository<TwoFactorAuthenticationSecretEntity>,
 	) {}
 
 	async validateTwoFactorAuthenticationCode({
@@ -75,5 +78,13 @@ export class TwoFactorService {
 		if (!validTOTP) {
 			throw new UnauthorizedException("The provided 2FA code was invalid")
 		}
+	}
+
+	async getTwoFactorAuthenticationSecretByUserId({
+		userId,
+	}: { userId: number }): Promise<TwoFactorAuthenticationSecretEntity | null> {
+		return this.twoFactorAuthenticationSecretRepository.findOneBy({
+			userId,
+		})
 	}
 }

@@ -21,10 +21,16 @@ import globalConfig from "src/config/global.config"
 import { TOTP_DIGITS, TOTP_INTERVAL_IN_SECONDS } from "src/common/constants"
 import type { Repository } from "typeorm"
 import type { ConfigType } from "@nestjs/config"
+import { TwoFactorService } from "src/two-factor/two-factor.service"
 
 enum Preferred2FAMethod {
 	APP = "app",
 	EMAIL = "email",
+}
+
+type UpdateUserResponse = {
+	twoFactorUri: string
+	twoFactorCode: string
 }
 
 @Injectable()
@@ -39,6 +45,7 @@ export class UsersService {
 		private readonly tOtpService: TOTPService,
 		@Inject(globalConfig.KEY)
 		private readonly globalSettings: ConfigType<typeof globalConfig>,
+		private readonly twoFactorService: TwoFactorService,
 	) {}
 
 	async create(createUserDto: RequestUserDto) {
@@ -75,7 +82,7 @@ export class UsersService {
 		id: number
 		updateUserDto: UpdateUserDto
 		tokenPayloadDto: RequestTokenPayloadDto
-	}) {
+	}): Promise<UpdateUserResponse | undefined> {
 		const user = await this.getUserById({ id })
 
 		if (!user) {
@@ -96,9 +103,6 @@ export class UsersService {
 			updateUserDto.isTwoFactorAuthenticationEnabled ||
 			user.isTwoFactorAuthenticationEnabled
 
-		const preferred2FAMethod =
-			updateUserDto.preferred2FAMethod || user.preferred2FAMethod
-
 		if (updateUserDto.preferred2FAMethod && !isTwoFactorAuthenticationEnabled) {
 			throw new ForbiddenException("TwoFactorAuthenticationEnabled is required")
 		}
@@ -107,34 +111,52 @@ export class UsersService {
 			updateUserDto.preferred2FAMethod = "email" as Preferred2FAMethod
 		}
 
-		const twoFactorAuthenticationSecret =
-			this.generateTokensService.generateTwoFactorAuthenticationSecret()
-
-		let twoFactorUri: string | undefined = undefined
-		let twoFactorCode: string | undefined = undefined
-
 		if (updateUserDto.preferred2FAMethod === "app") {
-			const existingTwoFactorAuthenticationSecret =
-				await this.getTwoFactorAuthenticationSecretByUserId({ id })
+			if (!updateUserDto.otp) {
+				const twoFactorAuthenticationSecret =
+					this.generateTokensService.generateTwoFactorAuthenticationSecret()
 
-			if (!existingTwoFactorAuthenticationSecret) {
-				const newSecret = this.twoFactorAuthenticationSecretRepository.create({
-					userId: id,
-					secret: encodeBase64(twoFactorAuthenticationSecret),
+				const existingTwoFactorAuthenticationSecret =
+					await this.twoFactorService.getTwoFactorAuthenticationSecretByUserId({
+						userId: id,
+					})
+
+				if (!existingTwoFactorAuthenticationSecret) {
+					const newSecret = this.twoFactorAuthenticationSecretRepository.create(
+						{
+							userId: id,
+							secret: encodeBase64(twoFactorAuthenticationSecret),
+						},
+					)
+
+					await this.twoFactorAuthenticationSecretRepository.save(newSecret)
+				}
+
+				const twoFactorUri = this.tOtpService.createTOTPKeyURI({
+					issuer: this.globalSettings.totpIssuer,
+					accountName: user.email,
+					key: twoFactorAuthenticationSecret,
+					periodInSeconds: TOTP_INTERVAL_IN_SECONDS,
+					digits: TOTP_DIGITS,
 				})
 
-				await this.twoFactorAuthenticationSecretRepository.save(newSecret)
+				const twoFactorCode = encodeBase32UpperCase(
+					twoFactorAuthenticationSecret,
+				)
+
+				return {
+					twoFactorUri,
+					twoFactorCode,
+				}
 			}
 
-			twoFactorUri = this.tOtpService.createTOTPKeyURI({
-				issuer: this.globalSettings.totpIssuer,
-				accountName: user.email,
-				key: twoFactorAuthenticationSecret,
-				periodInSeconds: TOTP_INTERVAL_IN_SECONDS,
-				digits: TOTP_DIGITS,
+			// Verify a TOTP Code with constant-time comparison.
+			await this.twoFactorService.validateTwoFactorAuthenticationTOTPCode({
+				code: updateUserDto.otp,
+				userId: id,
 			})
 
-			twoFactorCode = encodeBase32UpperCase(twoFactorAuthenticationSecret)
+			// TODO: Generate recovery codes
 		}
 
 		await this.userRepository.update(
@@ -150,14 +172,6 @@ export class UsersService {
 					updateUserDto.preferred2FAMethod as Preferred2FAMethod,
 			},
 		)
-
-		return {
-			twoFactorUri,
-			twoFactorCode,
-			isTwoFactorAuthenticationEnabled:
-				isTwoFactorAuthenticationEnabled ?? false,
-			preferred2FAMethod: preferred2FAMethod as Preferred2FAMethod,
-		}
 	}
 
 	async newEmailVerificationToken({ email }: RequestUserByEmailDto) {
@@ -187,13 +201,5 @@ export class UsersService {
 
 	async getUserById({ id }: { id: number }): Promise<UserEntity | null> {
 		return this.userRepository.findOne({ where: { id } })
-	}
-
-	protected getTwoFactorAuthenticationSecretByUserId({
-		id,
-	}: { id: number }): Promise<TwoFactorAuthenticationSecretEntity | null> {
-		return this.twoFactorAuthenticationSecretRepository.findOneBy({
-			userId: id,
-		})
 	}
 }

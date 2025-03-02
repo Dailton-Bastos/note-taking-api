@@ -2,6 +2,7 @@ import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-facto
 import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
 import { AbstractEntity } from "src/database/entities/abstract.entity"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
+import { TwoFactorAuthenticationRecoveryEntity } from "src/two-factor/entities/two_factor_authentication_recovery.entity"
 import { Column, CreateDateColumn, Entity, OneToMany, OneToOne } from "typeorm"
 
 enum Preferred2FAMethod {
@@ -50,4 +51,7 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 
 	@OneToOne(() => TwoFactorAuthenticationSecretEntity)
 	twoFactorAuthenticationSecret: TwoFactorAuthenticationSecretEntity
+
+	@OneToOne(() => TwoFactorAuthenticationRecoveryEntity)
+	twoFactorAuthenticationRecoveryEntity: TwoFactorAuthenticationRecoveryEntity
 }

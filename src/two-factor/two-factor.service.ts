@@ -6,7 +6,10 @@ import { TOTP_DIGITS, TOTP_INTERVAL_IN_SECONDS } from "src/common/constants"
 import { InjectRepository } from "@nestjs/typeorm"
 import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
 import { Repository } from "typeorm"
+import crypto from "node:crypto"
 import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
+import { TwoFactorAuthenticationRecoveryEntity } from "./entities/two_factor_authentication_recovery.entity"
+import { Base64Utils } from "src/common/utils/base64.utils"
 
 @Injectable()
 export class TwoFactorService {
@@ -17,6 +20,9 @@ export class TwoFactorService {
 		private readonly twoFactorAuthenticationRepository: Repository<TwoFactorAuthenticationEntity>,
 		@InjectRepository(TwoFactorAuthenticationSecretEntity)
 		private readonly twoFactorAuthenticationSecretRepository: Repository<TwoFactorAuthenticationSecretEntity>,
+		@InjectRepository(TwoFactorAuthenticationRecoveryEntity)
+		private readonly twoFactorAuthenticationRecoveryRepository: Repository<TwoFactorAuthenticationRecoveryEntity>,
+		private readonly base64Utils: Base64Utils,
 	) {}
 
 	async validateTwoFactorAuthenticationCode({
@@ -86,5 +92,45 @@ export class TwoFactorService {
 		return this.twoFactorAuthenticationSecretRepository.findOneBy({
 			userId,
 		})
+	}
+
+	async getTwoFactorAuthenticationRecoveryCodeByUserId({
+		userId,
+	}: {
+		userId: number
+	}): Promise<TwoFactorAuthenticationRecoveryEntity | null> {
+		return this.twoFactorAuthenticationRecoveryRepository.findOneBy({ userId })
+	}
+
+	async generateTwoFactorAuthenticationRecoveryCode({
+		userId,
+	}: { userId: number }): Promise<string[]> {
+		const code = [...Array(16)]
+			.map(() => {
+				return this.base64Utils.encode(
+					crypto.randomInt(100_000, 1_000_000).toString(),
+				)
+			})
+			.join(",")
+
+		const existingCodes =
+			await this.getTwoFactorAuthenticationRecoveryCodeByUserId({ userId })
+
+		if (existingCodes) {
+			await this.twoFactorAuthenticationRecoveryRepository.delete({
+				id: existingCodes.id,
+			})
+		}
+
+		const recoveryCodes = this.twoFactorAuthenticationRecoveryRepository.create(
+			{
+				userId,
+				code: [`{${code}}`],
+			},
+		)
+
+		await this.twoFactorAuthenticationRecoveryRepository.save(recoveryCodes)
+
+		return recoveryCodes.code.map((code) => this.base64Utils.decode(code))
 	}
 }

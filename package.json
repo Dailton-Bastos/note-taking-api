@@ -29,6 +29,7 @@
 		"docker:init": "docker compose up -d db app pgadmin",
 		"docker-build:all": "docker compose up -d --build",
 		"docker-build:app": "docker compose up -d --build app",
+		"docker-init:app": "docker compose up -d app",
 		"docker-logs:app": "docker container logs -f note-taking-api"
 	},
 	"lint-staged": {

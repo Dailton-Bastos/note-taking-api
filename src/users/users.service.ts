@@ -156,7 +156,10 @@ export class UsersService {
 				userId: id,
 			})
 
-			// TODO: Generate recovery codes
+			// Generate recovery codes
+			await this.twoFactorService.generateTwoFactorAuthenticationRecoveryCode({
+				userId: id,
+			})
 		}
 
 		await this.userRepository.update(

@@ -10,7 +10,6 @@ import type { ConfigType } from "@nestjs/config"
 import { UsersModule } from "src/users/users.module"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
-import { TwoFactorAuthenticationEntity } from "./entities/two-factor-authentication.entity"
 
 @Global()
 @Module({
@@ -19,7 +18,6 @@ import { TwoFactorAuthenticationEntity } from "./entities/two-factor-authenticat
 			UserEntity,
 			EmailVerificationCodeEntity,
 			PasswordResetTokenEntity,
-			TwoFactorAuthenticationEntity,
 		]),
 		ConfigModule.forFeature(jwtConfig),
 		JwtModule.registerAsync({

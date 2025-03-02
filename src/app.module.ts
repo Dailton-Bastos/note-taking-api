@@ -12,6 +12,7 @@ import { TypeOrmModule } from "@nestjs/typeorm"
 import { UserEntity } from "./users/entities/user.entity"
 import { TokensModule } from "./common/tokens/tokens.module"
 import { TOTPModule } from "./common/totp/totp.module"
+import { TwoFactorModule } from "./two-factor/two-factor.module"
 
 @Module({
 	imports: [
@@ -22,6 +23,7 @@ import { TOTPModule } from "./common/totp/totp.module"
 		HashingModule,
 		TOTPModule,
 		TokensModule,
+		TwoFactorModule,
 		TypeOrmModule.forFeature([UserEntity]),
 	],
 	controllers: [],

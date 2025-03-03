@@ -5,6 +5,7 @@ import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-auth
 import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 import { TwoFactorAuthenticationRecoveryEntity } from "./entities/two_factor_authentication_recovery.entity"
 import { Base64Utils } from "src/common/utils/base64.utils"
+import { TwoFactorController } from "./two-factor.controller"
 
 @Global()
 @Module({
@@ -17,5 +18,6 @@ import { Base64Utils } from "src/common/utils/base64.utils"
 	],
 	providers: [TwoFactorService, Base64Utils],
 	exports: [TwoFactorService],
+	controllers: [TwoFactorController],
 })
 export class TwoFactorModule {}

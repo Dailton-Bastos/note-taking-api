@@ -1,4 +1,5 @@
 import {
+	ForbiddenException,
 	Injectable,
 	NotFoundException,
 	UnauthorizedException,
@@ -14,6 +15,7 @@ import crypto from "node:crypto"
 import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 import { TwoFactorAuthenticationRecoveryEntity } from "./entities/two_factor_authentication_recovery.entity"
 import { Base64Utils } from "src/common/utils/base64.utils"
+import { UserEntity } from "src/users/entities/user.entity"
 
 @Injectable()
 export class TwoFactorService {
@@ -153,5 +155,23 @@ export class TwoFactorService {
 		await this.twoFactorAuthenticationRecoveryRepository.save(recoveryCodes)
 
 		return recoveryCodes.code.map((code) => this.base64Utils.decode(code))
+	}
+
+	async generateNewRecoveryCodes(user: UserEntity): Promise<string[]> {
+		if (!user) {
+			throw new NotFoundException("User not found")
+		}
+
+		if (!user.isTwoFactorAuthenticationEnabled) {
+			throw new ForbiddenException(
+				"Two Factor Authentication enabled is required",
+			)
+		}
+
+		if (user.preferred2FAMethod !== "app") {
+			throw new ForbiddenException("Authentication with TOTP is required")
+		}
+
+		return this.generateTwoFactorAuthenticationRecoveryCode({ userId: user.id })
 	}
 }

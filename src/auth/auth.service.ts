@@ -63,24 +63,10 @@ export class AuthService {
 		| ResponseSignInDto
 		| { twoFactorAuthentication: boolean; preferred2FAMethod: string }
 	> {
-		const user = await this.usersService.getUserByEmail({ email })
-
-		if (!user || !user.password) {
-			throw new UnauthorizedException("Incorrect email or password")
-		}
-
-		if (!user.emailVerified) {
-			throw new UnauthorizedException("Access Denied")
-		}
-
-		const passwordMatch = await this.hashingService.compare(
-			user.password,
+		const user = await this.verifyUserBeforeSign({
+			email,
 			password,
-		)
-
-		if (!passwordMatch) {
-			throw new UnauthorizedException("Incorrect email or password")
-		}
+		})
 
 		if (!user.isTwoFactorAuthenticationEnabled) {
 			return this.createTokens({ sub: user.id, email: user.email })
@@ -112,6 +98,38 @@ export class AuthService {
 
 		// Verify a TOTP Code with constant-time comparison.
 		await this.twoFactorService.validateTwoFactorAuthenticationTOTPCode({
+			code,
+			userId: user.id,
+		})
+
+		return this.createTokens({ sub: user.id, email })
+	}
+
+	async twoFactorAuthenticationRecovery({
+		email,
+		password,
+		code,
+	}: RequestSignInDto): Promise<ResponseSignInDto> {
+		if (!code) {
+			throw new UnauthorizedException("Code is required")
+		}
+
+		const user = await this.verifyUserBeforeSign({
+			email,
+			password,
+		})
+
+		if (!user.isTwoFactorAuthenticationEnabled) {
+			throw new UnauthorizedException("Two Factor Authentication is required")
+		}
+
+		if (user.preferred2FAMethod !== "app") {
+			throw new UnauthorizedException(
+				"Two Factor Authentication App is required",
+			)
+		}
+
+		await this.twoFactorService.twoFactorAuthenticationRecovery({
 			code,
 			userId: user.id,
 		})
@@ -233,6 +251,32 @@ export class AuthService {
 				password: hashedPassword,
 			},
 		)
+	}
+
+	private async verifyUserBeforeSign({
+		email,
+		password,
+	}: { email: string; password: string }): Promise<UserEntity> {
+		const user = await this.usersService.getUserByEmail({ email })
+
+		if (!user || !user.password) {
+			throw new UnauthorizedException("Incorrect email or password")
+		}
+
+		if (!user.emailVerified) {
+			throw new UnauthorizedException("Access Denied")
+		}
+
+		const passwordMatch = await this.hashingService.compare(
+			user.password,
+			password,
+		)
+
+		if (!passwordMatch) {
+			throw new UnauthorizedException("Incorrect email or password")
+		}
+
+		return user
 	}
 
 	private async createTokens({

@@ -68,4 +68,15 @@ export class AuthController {
 			userId,
 		})
 	}
+
+	@SetPublicRoute()
+	@HttpCode(HttpStatus.OK)
+	@Post("recovery")
+	async recovery(@Body() { email, password, code }: RequestSignInDto) {
+		return this.authService.twoFactorAuthenticationRecovery({
+			email,
+			password,
+			code,
+		})
+	}
 }

@@ -174,4 +174,30 @@ export class TwoFactorService {
 
 		return this.generateTwoFactorAuthenticationRecoveryCode({ userId: user.id })
 	}
+
+	async twoFactorAuthenticationRecovery({
+		code,
+		userId,
+	}: { code: string; userId: number }) {
+		const userRecoveryCodes =
+			await this.getTwoFactorAuthenticationRecoveryCodes({ userId })
+
+		if (!userRecoveryCodes.includes(code)) {
+			throw new UnauthorizedException("Code not found")
+		}
+
+		const recoveryCodesRemaining = userRecoveryCodes
+			.filter((recoveryCode) => recoveryCode !== code)
+			.map((code) => this.base64Utils.encode(code))
+			.join(",")
+
+		await this.twoFactorAuthenticationRecoveryRepository.update(
+			{
+				userId,
+			},
+			{
+				code: [`{${recoveryCodesRemaining}}`],
+			},
+		)
+	}
 }

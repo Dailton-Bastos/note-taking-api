@@ -1,7 +1,10 @@
+import { UserEntity } from "src/users/entities/user.entity"
 import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	JoinColumn,
+	OneToOne,
 	PrimaryGeneratedColumn,
 } from "typeorm"
 
@@ -21,4 +24,13 @@ export class EmailVerificationCodeEntity {
 
 	@CreateDateColumn({ name: "expires_at" })
 	expiresAt: Date
+
+	// Relations
+	// A Email Verification Code is owned by only a single User
+	@OneToOne(
+		() => UserEntity,
+		(user) => user.emailVerificationCode,
+	)
+	@JoinColumn({ name: "user_id" })
+	user: Awaited<UserEntity>
 }

@@ -1,5 +1,12 @@
 import { AbstractEntity } from "src/database/entities/abstract.entity"
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
+import { UserEntity } from "src/users/entities/user.entity"
+import {
+	Column,
+	Entity,
+	JoinColumn,
+	OneToOne,
+	PrimaryGeneratedColumn,
+} from "typeorm"
 
 @Entity({ name: "two_factor_authentication_secret" })
 export class TwoFactorAuthenticationSecretEntity extends AbstractEntity<TwoFactorAuthenticationSecretEntity> {
@@ -11,4 +18,13 @@ export class TwoFactorAuthenticationSecretEntity extends AbstractEntity<TwoFacto
 
 	@Column({ name: "user_id", unique: true })
 	userId: number
+
+	// Relations
+	// A Two Factor Authentication Secret is owned by only a single User
+	@OneToOne(
+		() => UserEntity,
+		(user) => user.twoFactorSecret,
+	)
+	@JoinColumn({ name: "user_id" })
+	user: Awaited<UserEntity>
 }

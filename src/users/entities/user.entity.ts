@@ -1,9 +1,8 @@
-import { TwoFactorAuthenticationSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
-import { TwoFactorAuthenticationEntity } from "src/auth/entities/two-factor-authentication.entity"
+import { TwoFactorAuthenticationSecretEntity as TwoFactorSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 import { AbstractEntity } from "src/database/entities/abstract.entity"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { TagsEntity } from "src/tags/entities/tags.entity"
-import { TwoFactorAuthenticationRecoveryEntity } from "src/two-factor/entities/two_factor_authentication_recovery.entity"
+import { TwoFactorAuthenticationRecoveryEntity as TwoFactorRecoveryEntity } from "src/two-factor/entities/two_factor_authentication_recovery.entity"
 import { Column, CreateDateColumn, Entity, OneToMany, OneToOne } from "typeorm"
 
 enum Preferred2FAMethod {
@@ -41,24 +40,32 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 	})
 	preferred2FAMethod?: Preferred2FAMethod
 
-	@OneToMany(
-		() => EmailVerificationCodeEntity,
-		(emailVerificationCode) => emailVerificationCode.userId,
+	// Relations
+	// User can have only a single Two Factor Recovery Code
+	@OneToOne(
+		() => TwoFactorRecoveryEntity,
+		(recovery) => recovery.user,
 	)
-	emailVerificationCodes: EmailVerificationCodeEntity[]
+	twoFactorRecovery: TwoFactorRecoveryEntity
 
-	@OneToOne(() => TwoFactorAuthenticationEntity)
-	twoFactorAuthentication: TwoFactorAuthenticationEntity
+	// User can have only a single Email Verification Code
+	@OneToOne(
+		() => EmailVerificationCodeEntity,
+		(code) => code.user,
+	)
+	emailVerificationCode: EmailVerificationCodeEntity
 
-	@OneToOne(() => TwoFactorAuthenticationSecretEntity)
-	twoFactorAuthenticationSecret: TwoFactorAuthenticationSecretEntity
+	// User can have only a single Two Factor Secret
+	@OneToOne(
+		() => TwoFactorSecretEntity,
+		(secret) => secret.user,
+	)
+	twoFactorSecret: TwoFactorSecretEntity
 
-	@OneToOne(() => TwoFactorAuthenticationRecoveryEntity)
-	twoFactorAuthenticationRecoveryEntity: TwoFactorAuthenticationRecoveryEntity
-
+	// User can have many tags
 	@OneToMany(
 		() => TagsEntity,
-		(tags) => tags.userId,
+		(tags) => tags.user,
 	)
 	tags: TagsEntity[]
 }

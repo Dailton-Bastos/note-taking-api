@@ -37,4 +37,15 @@ export class TagsService {
 
 		return this.tagsRepository.save(tag)
 	}
+
+	async findAll(userId: number): Promise<TagsEntity[]> {
+		return this.tagsRepository.find({
+			where: { userId },
+			order: { createdAt: "DESC" },
+			select: {
+				id: true,
+				name: true,
+			},
+		})
+	}
 }

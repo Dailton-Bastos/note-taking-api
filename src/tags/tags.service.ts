@@ -3,6 +3,7 @@ import {
 	ForbiddenException,
 	Inject,
 	Injectable,
+	NotFoundException,
 } from "@nestjs/common"
 import { InjectRepository } from "@nestjs/typeorm"
 import { TagsEntity } from "./entities/tags.entity"
@@ -10,6 +11,7 @@ import { Repository } from "typeorm"
 import { RequestTagDto } from "./dto/request-tag.dto"
 import { REMOVE_SPACES_REGEX } from "src/common/constants"
 import { RegexProtocol } from "src/common/utils/regex.protocol"
+import { RequestTokenPayloadDto } from "src/auth/dto/request-token-payload.dto"
 
 @Injectable()
 export class TagsService {
@@ -47,5 +49,33 @@ export class TagsService {
 				name: true,
 			},
 		})
+	}
+
+	async delete({
+		id,
+		tokenPayload,
+	}: { id: number; tokenPayload: RequestTokenPayloadDto }): Promise<void> {
+		const tag = await this.tagsRepository.findOne({
+			where: { id },
+			relations: {
+				user: true,
+			},
+			select: {
+				id: true,
+				user: {
+					id: true,
+				},
+			},
+		})
+
+		if (!tag) {
+			throw new NotFoundException("Tag not found")
+		}
+
+		if (tag.user.id !== tokenPayload.sub) {
+			throw new ForbiddenException("Not allowed")
+		}
+
+		await this.tagsRepository.remove(tag)
 	}
 }

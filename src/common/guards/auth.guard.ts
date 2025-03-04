@@ -46,7 +46,16 @@ export class AuthGuard implements CanActivate {
 		try {
 			const payload = await this.jwtService.verifyAsync(token)
 
-			const user = await this.userRepository.findOneBy({ id: payload.sub })
+			const user = await this.userRepository.findOne({
+				where: { id: payload.sub },
+				select: {
+					id: true,
+					email: true,
+					name: true,
+					isTwoFactorAuthenticationEnabled: true,
+					preferred2FAMethod: true,
+				},
+			})
 
 			if (!user) {
 				throw new UnauthorizedException("Access Denied")

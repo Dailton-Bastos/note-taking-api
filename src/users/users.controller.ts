@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Param,
 	Patch,
@@ -39,6 +40,14 @@ export class UsersController {
 		@RequestTokenPayloadParam() tokenPayloadDto: RequestTokenPayloadDto,
 	) {
 		return this.usersService.update({ id, updateUserDto, tokenPayloadDto })
+	}
+
+	@Delete(":id")
+	async remove(
+		@Param("id") id: number,
+		@RequestTokenPayloadParam() tokenPayload: RequestTokenPayloadDto,
+	) {
+		return this.usersService.delete({ id, tokenPayload })
 	}
 
 	@Get("profile")

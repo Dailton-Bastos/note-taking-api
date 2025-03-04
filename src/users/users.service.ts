@@ -177,6 +177,23 @@ export class UsersService {
 		)
 	}
 
+	async delete({
+		id,
+		tokenPayload,
+	}: { id: number; tokenPayload: RequestTokenPayloadDto }): Promise<void> {
+		const user = await this.getUserById({ id })
+
+		if (!user) {
+			throw new NotFoundException("User not found")
+		}
+
+		if (user.id !== tokenPayload.sub) {
+			throw new ForbiddenException("Not allowed")
+		}
+
+		await this.userRepository.remove(user)
+	}
+
 	async newEmailVerificationToken({ email }: RequestUserByEmailDto) {
 		if (!email) {
 			throw new UnauthorizedException("Missing email")
@@ -203,6 +220,6 @@ export class UsersService {
 	}
 
 	async getUserById({ id }: { id: number }): Promise<UserEntity | null> {
-		return this.userRepository.findOne({ where: { id } })
+		return this.userRepository.findOneBy({ id })
 	}
 }

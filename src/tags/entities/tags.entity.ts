@@ -1,6 +1,7 @@
 import { AbstractEntity } from "src/database/entities/abstract.entity"
+import { NotesEntity } from "src/notes/entities/note.entity"
 import { UserEntity } from "src/users/entities/user.entity"
-import { Column, Entity, JoinColumn, ManyToOne } from "typeorm"
+import { Column, Entity, JoinColumn, ManyToMany, ManyToOne } from "typeorm"
 
 @Entity({ name: "tags" })
 export class TagsEntity extends AbstractEntity<TagsEntity> {
@@ -18,4 +19,12 @@ export class TagsEntity extends AbstractEntity<TagsEntity> {
 	)
 	@JoinColumn({ name: "user_id" })
 	user: Awaited<UserEntity>
+
+	// A tag is owned by many notes
+	@ManyToMany(
+		() => NotesEntity,
+		(note) => note.tags,
+		{ onDelete: "NO ACTION", onUpdate: "NO ACTION" },
+	)
+	notes?: NotesEntity[]
 }

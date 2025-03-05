@@ -36,4 +36,24 @@ export class DatabaseConstraintsUtils {
 			new TableUnique({ columnNames }),
 		)
 	}
+
+	public async dropForeignKeys({
+		tableName,
+		columnNames,
+	}: { tableName: string; columnNames: string[] }): Promise<void> {
+		const table = await this.queryRunner.getTable(tableName)
+
+		if (!table?.foreignKeys) return
+
+		for (const foreignKey of table.foreignKeys) {
+			for (const columnName of columnNames) {
+				if (foreignKey.columnNames.includes(columnName)) {
+					await this.queryRunner.dropForeignKey(
+						tableName,
+						foreignKey.name as string,
+					)
+				}
+			}
+		}
+	}
 }

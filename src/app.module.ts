@@ -14,6 +14,7 @@ import { TokensModule } from "./common/tokens/tokens.module"
 import { TOTPModule } from "./common/totp/totp.module"
 import { TwoFactorModule } from "./two-factor/two-factor.module"
 import { TagsModule } from "./tags/tags.module"
+import { NotesModule } from "./notes/notes.module"
 
 @Module({
 	imports: [
@@ -27,6 +28,7 @@ import { TagsModule } from "./tags/tags.module"
 		TwoFactorModule,
 		TypeOrmModule.forFeature([UserEntity]),
 		TagsModule,
+		NotesModule,
 	],
 	controllers: [],
 	providers: [

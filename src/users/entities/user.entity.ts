@@ -1,6 +1,7 @@
 import { TwoFactorAuthenticationSecretEntity as TwoFactorSecretEntity } from "src/auth/entities/two-factor-authentication-secret.entity"
 import { AbstractEntity } from "src/database/entities/abstract.entity"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
+import { NotesEntity } from "src/notes/entities/note.entity"
 import { TagsEntity } from "src/tags/entities/tags.entity"
 import { TwoFactorAuthenticationRecoveryEntity as TwoFactorRecoveryEntity } from "src/two-factor/entities/two_factor_authentication_recovery.entity"
 import { Column, CreateDateColumn, Entity, OneToMany, OneToOne } from "typeorm"
@@ -68,4 +69,11 @@ export class UserEntity extends AbstractEntity<UserEntity> {
 		(tags) => tags.user,
 	)
 	tags: TagsEntity[]
+
+	// User can have many notes
+	@OneToMany(
+		() => NotesEntity,
+		(note) => note.user,
+	)
+	notes: NotesEntity[]
 }

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common"
+import { Injectable, NotFoundException } from "@nestjs/common"
 import { InjectRepository } from "@nestjs/typeorm"
 import { NotesEntity } from "./entities/note.entity"
 import { In, Repository } from "typeorm"
@@ -50,5 +50,24 @@ export class NotesService {
 				},
 			},
 		})
+	}
+
+	async delete({ id, userId }: { id: number; userId: number }): Promise<void> {
+		const note = await this.notesRepository.findOne({
+			relations: {
+				tags: true,
+			},
+			where: { id, userId },
+		})
+
+		if (!note) {
+			throw new NotFoundException("Note not found")
+		}
+
+		note.tags = []
+
+		await this.notesRepository.save(note)
+
+		await this.notesRepository.delete({ id })
 	}
 }

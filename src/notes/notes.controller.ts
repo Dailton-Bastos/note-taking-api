@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from "@nestjs/common"
+import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common"
 import { NotesService } from "./notes.service"
 import { RequestNoteDto } from "./dto/request-note.dto"
 import { UserId } from "src/common/decorators/user-id.decorator"
@@ -25,5 +25,10 @@ export class NotesController {
 	@Get()
 	async findAll(@UserId() userId: number) {
 		return this.notesService.findAll(userId)
+	}
+
+	@Delete(":id")
+	async delete(@Param("id") id: number, @UserId() userId: number) {
+		return this.notesService.delete({ id, userId })
 	}
 }

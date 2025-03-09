@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from "@nestjs/common"
+import { Body, Controller, Get, Post } from "@nestjs/common"
 import { NotesService } from "./notes.service"
 import { RequestNoteDto } from "./dto/request-note.dto"
 import { UserId } from "src/common/decorators/user-id.decorator"
@@ -20,5 +20,10 @@ export class NotesController {
 			},
 			userId,
 		)
+	}
+
+	@Get()
+	async findAll(@UserId() userId: number) {
+		return this.notesService.findAll(userId)
 	}
 }

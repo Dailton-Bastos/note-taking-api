@@ -29,4 +29,26 @@ export class NotesService {
 
 		return this.notesRepository.save(note)
 	}
+
+	async findAll(userId: number): Promise<NotesEntity[]> {
+		return this.notesRepository.find({
+			where: {
+				userId,
+			},
+			relations: {
+				tags: true,
+			},
+			order: { createdAt: "DESC" },
+			select: {
+				id: true,
+				title: true,
+				description: true,
+				updatedAt: true,
+				tags: {
+					id: true,
+					name: true,
+				},
+			},
+		})
+	}
 }

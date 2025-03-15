@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException } from "@nestjs/common"
+import {
+	ForbiddenException,
+	Injectable,
+	NotFoundException,
+} from "@nestjs/common"
 import { InjectRepository } from "@nestjs/typeorm"
 import { NotesEntity } from "./entities/note.entity"
 import { In, Repository } from "typeorm"
 import { RequestNoteDto } from "./dto/request-note.dto"
 import { TagsEntity } from "src/tags/entities/tags.entity"
+import { UpdateNoteDto } from "./dto/update-note.dto"
+import { RequestTokenPayloadDto } from "src/auth/dto/request-token-payload.dto"
 
 @Injectable()
 export class NotesService {
@@ -43,6 +49,7 @@ export class NotesService {
 				id: true,
 				title: true,
 				description: true,
+				archivedAt: true,
 				updatedAt: true,
 				tags: {
 					id: true,
@@ -50,6 +57,39 @@ export class NotesService {
 				},
 			},
 		})
+	}
+
+	async update({
+		id,
+		userId,
+		tokenPayloadDto,
+		updateNoteDto,
+	}: {
+		id: number
+		userId: number
+		tokenPayloadDto: RequestTokenPayloadDto
+		updateNoteDto: UpdateNoteDto
+	}): Promise<void> {
+		const note = await this.notesRepository.findOne({
+			where: { id, userId },
+		})
+
+		if (!note) {
+			throw new NotFoundException("Note not found")
+		}
+
+		if (note.userId !== tokenPayloadDto.sub) {
+			throw new ForbiddenException("Not allowed")
+		}
+
+		await this.notesRepository.update(
+			{ id },
+			{
+				title: updateNoteDto.title,
+				description: updateNoteDto.description,
+				archivedAt: updateNoteDto?.archivedAt,
+			},
+		)
 	}
 
 	async delete({ id, userId }: { id: number; userId: number }): Promise<void> {

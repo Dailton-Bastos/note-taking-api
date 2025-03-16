@@ -11,8 +11,8 @@ import { RequestNoteDto } from "./dto/request-note.dto"
 import { TagsEntity } from "src/tags/entities/tags.entity"
 import { UpdateNoteDto } from "./dto/update-note.dto"
 import { RequestTokenPayloadDto } from "src/auth/dto/request-token-payload.dto"
-import { RemoveNoteTagsDto } from "./dto/remove-note-tags.dto"
 import { NoteTagsEntity } from "./entities/note-tags.entity"
+import { RequestNoteTagsDto } from "./dto/request-note-tags.dto"
 
 @Injectable()
 export class NotesService {
@@ -117,13 +117,13 @@ export class NotesService {
 	}
 
 	async removeNoteTags({
-		removeNoteTagsDto,
+		requestNoteTagsDto,
 		userId,
 	}: {
-		removeNoteTagsDto: RemoveNoteTagsDto
+		requestNoteTagsDto: RequestNoteTagsDto
 		userId: number
 	}): Promise<void> {
-		const { id, tagsIds } = removeNoteTagsDto
+		const { id, tagsIds } = requestNoteTagsDto
 
 		if (!tagsIds || tagsIds.length === 0) {
 			throw new BadRequestException("Tags is required")
@@ -145,5 +145,51 @@ export class NotesService {
 		}
 
 		await this.noteTagsEntity.delete({ noteId: note.id, tagId: In(tagsIds) })
+	}
+
+	async addNoteTags({
+		requestNoteTagsDto,
+		userId,
+	}: {
+		requestNoteTagsDto: RequestNoteTagsDto
+		userId: number
+	}): Promise<void> {
+		const { id, tagsIds } = requestNoteTagsDto
+
+		if (!tagsIds || tagsIds.length === 0) {
+			throw new BadRequestException("Tags is required")
+		}
+
+		const note = await this.notesRepository.findOne({
+			where: { id, userId },
+			relations: {
+				tags: true,
+			},
+		})
+
+		if (!note) {
+			throw new NotFoundException("Note not found")
+		}
+
+		if (note.userId !== userId) {
+			throw new ForbiddenException("Not allowed")
+		}
+
+		const newTags = await this.tagsRepository.findBy({
+			id: In(tagsIds),
+			userId,
+		})
+
+		const currentNoteTags = note?.tags ?? []
+
+		const uniqueTags = newTags.filter(
+			(tag) => !currentNoteTags.some((item) => item.id === tag.id),
+		)
+
+		const allTags = [...currentNoteTags, ...uniqueTags]
+
+		note.tags = allTags
+
+		await this.notesRepository.save(note)
 	}
 }

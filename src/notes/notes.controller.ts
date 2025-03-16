@@ -15,7 +15,7 @@ import { UserId } from "src/common/decorators/user-id.decorator"
 import { UpdateNoteDto } from "./dto/update-note.dto"
 import { RequestTokenPayloadDto } from "src/auth/dto/request-token-payload.dto"
 import { RequestTokenPayloadParam } from "src/auth/params/request-token-payload.param"
-import { RemoveNoteTagsDto } from "./dto/remove-note-tags.dto"
+import { RequestNoteTagsDto } from "./dto/request-note-tags.dto"
 
 @Controller("notes")
 export class NotesController {
@@ -65,8 +65,16 @@ export class NotesController {
 	@Post("/remove-tags")
 	async removeNoteTags(
 		@UserId() userId: number,
-		@Body() removeNoteTagsDto: RemoveNoteTagsDto,
+		@Body() requestNoteTagsDto: RequestNoteTagsDto,
 	) {
-		return this.notesService.removeNoteTags({ removeNoteTagsDto, userId })
+		return this.notesService.removeNoteTags({ requestNoteTagsDto, userId })
+	}
+
+	@Post("/add-tags")
+	async addNoteTags(
+		@UserId() userId: number,
+		@Body() requestNoteTagsDto: RequestNoteTagsDto,
+	) {
+		return this.notesService.addNoteTags({ requestNoteTagsDto, userId })
 	}
 }

@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	ForbiddenException,
 	Injectable,
 	NotFoundException,
@@ -10,6 +11,8 @@ import { RequestNoteDto } from "./dto/request-note.dto"
 import { TagsEntity } from "src/tags/entities/tags.entity"
 import { UpdateNoteDto } from "./dto/update-note.dto"
 import { RequestTokenPayloadDto } from "src/auth/dto/request-token-payload.dto"
+import { RemoveNoteTagsDto } from "./dto/remove-note-tags.dto"
+import { NoteTagsEntity } from "./entities/note-tags.entity"
 
 @Injectable()
 export class NotesService {
@@ -18,6 +21,8 @@ export class NotesService {
 		private readonly notesRepository: Repository<NotesEntity>,
 		@InjectRepository(TagsEntity)
 		private readonly tagsRepository: Repository<TagsEntity>,
+		@InjectRepository(NoteTagsEntity)
+		private readonly noteTagsEntity: Repository<NoteTagsEntity>,
 	) {}
 
 	async create(
@@ -109,5 +114,36 @@ export class NotesService {
 		await this.notesRepository.save(note)
 
 		await this.notesRepository.delete({ id })
+	}
+
+	async removeNoteTags({
+		removeNoteTagsDto,
+		userId,
+	}: {
+		removeNoteTagsDto: RemoveNoteTagsDto
+		userId: number
+	}): Promise<void> {
+		const { id, tagsIds } = removeNoteTagsDto
+
+		if (!tagsIds || tagsIds.length === 0) {
+			throw new BadRequestException("Tags is required")
+		}
+
+		const note = await this.notesRepository.findOne({
+			where: { id, userId },
+			relations: {
+				tags: true,
+			},
+		})
+
+		if (!note) {
+			throw new NotFoundException("Note not found")
+		}
+
+		if (note.userId !== userId) {
+			throw new ForbiddenException("Not allowed")
+		}
+
+		await this.noteTagsEntity.delete({ noteId: note.id, tagId: In(tagsIds) })
 	}
 }

@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common"
 import { MailerModule as NestMailerModule } from "@nestjs-modules/mailer"
+import { HandlebarsAdapter } from "@nestjs-modules/mailer/dist/adapters/handlebars.adapter"
 import { ConfigModule, ConfigType } from "@nestjs/config"
 import mailerConfig from "src/config/mailer.config"
 
@@ -21,6 +22,24 @@ import mailerConfig from "src/config/mailer.config"
 				},
 				defaults: {
 					from: `No Reply ${mailerSettings.from}`,
+				},
+				preview: true,
+				template: {
+					dir: `${__dirname}/templates`,
+					adapter: new HandlebarsAdapter(undefined, {
+						inlineCssEnabled: true,
+					}),
+					options: {
+						strict: true,
+					},
+				},
+				options: {
+					partials: {
+						dir: `${__dirname}/partials`,
+						options: {
+							strict: true,
+						},
+					},
 				},
 			}),
 		}),

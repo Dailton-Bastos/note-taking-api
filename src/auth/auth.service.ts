@@ -86,7 +86,10 @@ export class AuthService {
 				await this.mailerService.sendMail({
 					to: user.email,
 					subject: "2FA Code",
-					html: `<p>Your 2FA code: <strong>${code}</strong>`,
+					template: "access_code",
+					context: {
+						code,
+					},
 				})
 			}
 

@@ -15,6 +15,7 @@ import { TOTPModule } from "./common/totp/totp.module"
 import { TwoFactorModule } from "./two-factor/two-factor.module"
 import { TagsModule } from "./tags/tags.module"
 import { NotesModule } from "./notes/notes.module"
+import { MailerModule } from "./common/mailer/mailer.module"
 
 @Module({
 	imports: [
@@ -29,6 +30,7 @@ import { NotesModule } from "./notes/notes.module"
 		TypeOrmModule.forFeature([UserEntity]),
 		TagsModule,
 		NotesModule,
+		MailerModule,
 	],
 	controllers: [],
 	providers: [

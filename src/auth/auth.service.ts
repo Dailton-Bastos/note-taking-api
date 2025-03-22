@@ -10,6 +10,7 @@ import { InjectRepository } from "@nestjs/typeorm"
 import { HashingService } from "src/common/hashing/hashing.service"
 import jwtConfig from "src/config/jwt.config"
 import { JwtService } from "@nestjs/jwt"
+import { MailerService } from "@nestjs-modules/mailer"
 import type { ConfigType } from "@nestjs/config"
 import type { RequestSignInDto } from "./dto/request-signIn.dto"
 import type { ResponseSignInDto } from "./dto/response-signIn.dto"
@@ -50,6 +51,7 @@ export class AuthService {
 		@InjectRepository(PasswordResetTokenEntity)
 		private readonly passwordResetTokenRepository: Repository<PasswordResetTokenEntity>,
 		private readonly twoFactorService: TwoFactorService,
+		private readonly mailerService: MailerService,
 	) {
 		this.jwtExpirationTimeInSeconds = this.jwtSettings.jwtTtl
 		this.jwtRefreshExpirationTimeInSeconds = this.jwtSettings.jwtRefreshTtl
@@ -74,9 +76,17 @@ export class AuthService {
 
 		if (!code) {
 			if (!user.preferred2FAMethod || user.preferred2FAMethod === "email") {
-				// TODO send email with code
-				await this.generateTokensService.generateTwoFactorAuthenticationToken({
-					email,
+				const { code } =
+					await this.generateTokensService.generateTwoFactorAuthenticationToken(
+						{
+							email,
+						},
+					)
+
+				await this.mailerService.sendMail({
+					to: user.email,
+					subject: "2FA Code",
+					html: `<p>Your 2FA code: <strong>${code}</strong>`,
 				})
 			}
 

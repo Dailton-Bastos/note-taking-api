@@ -11,6 +11,7 @@ import { UsersModule } from "src/users/users.module"
 import { EmailVerificationCodeEntity } from "src/database/entities/email-verification-code.entity"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 import { TwoFactorModule } from "src/two-factor/two-factor.module"
+import { MailerQueueModule } from "src/common/queues/queue.module"
 
 @Global()
 @Module({
@@ -41,6 +42,7 @@ import { TwoFactorModule } from "src/two-factor/two-factor.module"
 		}),
 		UsersModule,
 		TwoFactorModule,
+		MailerQueueModule,
 	],
 	exports: [ConfigModule],
 	providers: [AuthService],

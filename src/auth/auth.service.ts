@@ -10,7 +10,6 @@ import { InjectRepository } from "@nestjs/typeorm"
 import { HashingService } from "src/common/hashing/hashing.service"
 import jwtConfig from "src/config/jwt.config"
 import { JwtService } from "@nestjs/jwt"
-import { MailerService } from "@nestjs-modules/mailer"
 import type { ConfigType } from "@nestjs/config"
 import type { RequestSignInDto } from "./dto/request-signIn.dto"
 import type { ResponseSignInDto } from "./dto/response-signIn.dto"
@@ -25,6 +24,7 @@ import { RequestNewPasswordDto } from "./dto/request-new-password.dto"
 import { PasswordResetTokenEntity } from "src/database/entities/password-reset-token.entity"
 import { RequestNewPasswordTokenDto } from "./dto/request-new-password-token.dto"
 import { TwoFactorService } from "src/two-factor/two-factor.service"
+import { MailerQueuesService } from "src/common/producers/mailer.queues.service"
 
 enum Preferred2FAMethod {
 	APP = "app",
@@ -51,7 +51,7 @@ export class AuthService {
 		@InjectRepository(PasswordResetTokenEntity)
 		private readonly passwordResetTokenRepository: Repository<PasswordResetTokenEntity>,
 		private readonly twoFactorService: TwoFactorService,
-		private readonly mailerService: MailerService,
+		private readonly mailerQueuesService: MailerQueuesService,
 	) {
 		this.jwtExpirationTimeInSeconds = this.jwtSettings.jwtTtl
 		this.jwtRefreshExpirationTimeInSeconds = this.jwtSettings.jwtRefreshTtl
@@ -83,14 +83,7 @@ export class AuthService {
 						},
 					)
 
-				await this.mailerService.sendMail({
-					to: user.email,
-					subject: "2FA Code",
-					template: "access_code",
-					context: {
-						code,
-					},
-				})
+				await this.mailerQueuesService.sendEmailAuthCode({ email, code })
 			}
 
 			return {

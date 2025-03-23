@@ -22,6 +22,7 @@ import { TOTP_DIGITS, TOTP_INTERVAL_IN_SECONDS } from "src/common/constants"
 import type { Repository } from "typeorm"
 import type { ConfigType } from "@nestjs/config"
 import { TwoFactorService } from "src/two-factor/two-factor.service"
+import { MailerQueuesService } from "src/common/producers/mailer.queues.service"
 
 enum Preferred2FAMethod {
 	APP = "app",
@@ -46,6 +47,7 @@ export class UsersService {
 		@Inject(globalConfig.KEY)
 		private readonly globalSettings: ConfigType<typeof globalConfig>,
 		private readonly twoFactorService: TwoFactorService,
+		private readonly mailerQueuesService: MailerQueuesService,
 	) {}
 
 	async create(createUserDto: RequestUserDto) {
@@ -61,9 +63,15 @@ export class UsersService {
 		await this.userRepository.save(newUser)
 
 		try {
-			await this.generateTokensService.generateEmailVerificationToken({
+			const token =
+				await this.generateTokensService.generateEmailVerificationToken({
+					email: newUser.email,
+					userId: newUser.id,
+				})
+
+			await this.mailerQueuesService.sendEmailVerification({
 				email: newUser.email,
-				userId: newUser.id,
+				token: token.code,
 			})
 		} catch (error) {
 			await this.userRepository.delete({ id: newUser.id })

@@ -16,11 +16,13 @@ import { TwoFactorModule } from "./two-factor/two-factor.module"
 import { TagsModule } from "./tags/tags.module"
 import { NotesModule } from "./notes/notes.module"
 import { MailerModule } from "./common/mailer/mailer.module"
+import { BullMQModule } from "./database/bullmq.module"
 
 @Module({
 	imports: [
 		GlobalConfigModule,
 		DatabaseModule,
+		BullMQModule,
 		UsersModule,
 		AuthModule,
 		HashingModule,

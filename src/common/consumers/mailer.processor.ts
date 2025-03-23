@@ -31,6 +31,15 @@ export class MailerProcessor extends WorkerHost {
 				break
 
 			case SEND_EMAIL_VERIFICATION_QUEUE:
+				await this.mailerService.sendMail({
+					to: job.data.email,
+					subject: "Confirm your email",
+					template: "email_verification",
+					context: {
+						confirmLink: `${process.env.WEB_URL}/auth/email-verification?token=${job.data.token}`,
+					},
+				})
+
 				break
 
 			default:

@@ -213,9 +213,15 @@ export class UsersService {
 			throw new UnauthorizedException("Email does not exist")
 		}
 
-		return this.generateTokensService.generateEmailVerificationToken({
-			email,
-			userId: existingUser.id,
+		const token =
+			await this.generateTokensService.generateEmailVerificationToken({
+				email,
+				userId: existingUser.id,
+			})
+
+		await this.mailerQueuesService.sendEmailVerification({
+			email: email,
+			token: token.code,
 		})
 	}
 

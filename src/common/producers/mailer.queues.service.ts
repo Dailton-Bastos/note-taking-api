@@ -18,6 +18,11 @@ type SendEmailVerificationQueue = {
 	token: string
 }
 
+type Response = {
+	status: "success" | "error" | null
+	message?: string
+}
+
 @Injectable()
 export class MailerQueuesService {
 	constructor(
@@ -35,8 +40,13 @@ export class MailerQueuesService {
 	async sendEmailVerification({
 		email,
 		token,
-	}: SendEmailVerificationQueue): Promise<void> {
+	}: SendEmailVerificationQueue): Promise<Response> {
 		await this.mailerQueues.add(SEND_EMAIL_VERIFICATION_QUEUE, { email, token })
+
+		return {
+			status: "success",
+			message: "Verification email sent",
+		}
 	}
 
 	async sendEmailResetPassword({

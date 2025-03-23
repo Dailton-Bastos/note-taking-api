@@ -26,9 +26,9 @@ import { RequestNewPasswordTokenDto } from "./dto/request-new-password-token.dto
 import { TwoFactorService } from "src/two-factor/two-factor.service"
 import { MailerQueuesService } from "src/common/producers/mailer.queues.service"
 
-enum Preferred2FAMethod {
-	APP = "app",
-	EMAIL = "email",
+type Response = {
+	status: "success" | "error" | null
+	message?: string
 }
 
 @Injectable()
@@ -61,14 +61,24 @@ export class AuthService {
 		email,
 		password,
 		code,
-	}: RequestSignInDto): Promise<
-		| ResponseSignInDto
-		| { twoFactorAuthentication: boolean; preferred2FAMethod: string }
-	> {
+	}: RequestSignInDto): Promise<ResponseSignInDto | Response> {
 		const user = await this.verifyUserBeforeSign({
 			email,
 			password,
 		})
+
+		if (!user.emailVerified) {
+			const token =
+				await this.generateTokensService.generateEmailVerificationToken({
+					email: user.email,
+					userId: user.id,
+				})
+
+			return this.mailerQueuesService.sendEmailVerification({
+				email: user.email,
+				token: token.code,
+			})
+		}
 
 		if (!user.isTwoFactorAuthenticationEnabled) {
 			return this.createTokens({ sub: user.id, email: user.email })
@@ -87,8 +97,8 @@ export class AuthService {
 			}
 
 			return {
-				twoFactorAuthentication: true,
-				preferred2FAMethod: user.preferred2FAMethod as Preferred2FAMethod,
+				status: "success",
+				message: "twoFactorAuthentication",
 			}
 		}
 
@@ -273,10 +283,6 @@ export class AuthService {
 
 		if (!user || !user.password) {
 			throw new UnauthorizedException("Incorrect email or password")
-		}
-
-		if (!user.emailVerified) {
-			throw new UnauthorizedException("Access Denied")
 		}
 
 		const passwordMatch = await this.hashingService.compare(

@@ -207,7 +207,13 @@ export class AuthService {
 			throw new UnauthorizedException("Email does not exist")
 		}
 
-		return this.generateTokensService.generateResetPasswordToken({ email })
+		const { token } =
+			await this.generateTokensService.generateResetPasswordToken({ email })
+
+		await this.mailerQueuesService.sendEmailResetPassword({
+			email,
+			token: token,
+		})
 	}
 
 	async newPassword(

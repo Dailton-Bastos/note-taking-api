@@ -4,6 +4,7 @@ import { InjectQueue } from "@nestjs/bullmq"
 import {
 	MAILER_REGISTER_QUEUE,
 	SEND_EMAIL_AUTH_CODE_QUEUE,
+	SEND_EMAIL_RESET_PASSWORD_QUEUE,
 	SEND_EMAIL_VERIFICATION_QUEUE,
 } from "../constants"
 
@@ -36,5 +37,15 @@ export class MailerQueuesService {
 		token,
 	}: SendEmailVerificationQueue): Promise<void> {
 		await this.mailerQueues.add(SEND_EMAIL_VERIFICATION_QUEUE, { email, token })
+	}
+
+	async sendEmailResetPassword({
+		email,
+		token,
+	}: SendEmailVerificationQueue): Promise<void> {
+		await this.mailerQueues.add(SEND_EMAIL_RESET_PASSWORD_QUEUE, {
+			email,
+			token,
+		})
 	}
 }

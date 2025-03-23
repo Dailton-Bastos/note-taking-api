@@ -3,6 +3,7 @@ import { Processor, WorkerHost } from "@nestjs/bullmq"
 import {
 	MAILER_REGISTER_QUEUE,
 	SEND_EMAIL_AUTH_CODE_QUEUE,
+	SEND_EMAIL_RESET_PASSWORD_QUEUE,
 	SEND_EMAIL_VERIFICATION_QUEUE,
 } from "../constants"
 import { Job } from "bullmq"
@@ -37,6 +38,18 @@ export class MailerProcessor extends WorkerHost {
 					template: "email_verification",
 					context: {
 						confirmLink: `${process.env.WEB_URL}/auth/email-verification?token=${job.data.token}`,
+					},
+				})
+
+				break
+
+			case SEND_EMAIL_RESET_PASSWORD_QUEUE:
+				await this.mailerService.sendMail({
+					to: job.data.email,
+					subject: "Reset your password",
+					template: "reset_password",
+					context: {
+						resetLink: `${process.env.WEB_URL}/auth/new-password?token=${job.data.token}`,
 					},
 				})
 
